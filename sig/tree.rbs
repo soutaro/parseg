@@ -1,0 +1,63 @@
+module Parseg
+  module Tree
+    type t = TokenTree
+           | NonTerminalTree
+           | EmptyTree
+           | AlternationTree
+           | RepeatTree
+           | OptionalTree
+
+    class Base[EXPR]
+      attr_reader next_tree: t?
+
+      attr_reader expression: EXPR
+
+      def range: (TokenLocator) -> Range[Integer]?
+
+      def first_range: (TokenLocator) -> Range[Integer]?
+
+      def each: () { (t) -> void } -> void
+              | () -> Enumerator[t, void]
+    end
+
+    class TokenTree < Base[Grammar::Expression::TokenSymbol]
+      attr_reader token_id: Integer
+
+      def initialize: (Grammar::Expression::TokenSymbol, Integer, next_tree: t?) -> void
+    end
+
+    class NonTerminalTree < Base[Grammar::Expression::NonTerminalSymbol]
+      attr_reader value: t
+
+      def initialize: (Grammar::Expression::NonTerminalSymbol, t, next_tree: t?) -> void
+    end
+
+    class EmptyTree < Base[Grammar::Expression::Empty]
+      def initialize: (Grammar::Expression::Empty, next_tree: t?) -> void
+    end
+
+    class AlternationTree < Base[Grammar::Expression::Alternation]
+      attr_reader value: t
+
+      def initialize: (Grammar::Expression::Alternation, t, next_tree: t?) -> void
+    end
+
+    class RepeatTree < Base[Grammar::Expression::Repeat]
+      attr_reader values: Array[t]
+
+      def each_non_terminal: () { (t) -> void } -> void
+                           | () -> Enumerator[t, void]
+
+      def each_separator: () { (t) -> void } -> void
+                        | () -> Enumerator[t, void]
+
+      def initialize: (Grammar::Expression::Repeat, Array[t], next_tree: t?) -> void
+    end
+
+    class OptionalTree < Base[Grammar::Expression::Optional]
+      attr_reader value: t?
+
+      def initialize: (Grammar::Expression::Optional, t?, next_tree: t?) -> void
+    end
+  end
+end

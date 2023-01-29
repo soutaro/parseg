@@ -1,0 +1,29 @@
+module Parseg
+  class Parser
+    attr_reader grammar: Grammar
+
+    attr_reader tokenizer: _Tokenizer
+
+    attr_reader token_locator: TokenLocator
+
+    @token_id: Integer
+
+    @next_token: token?
+
+    def initialize: (grammar: Grammar, tokenizer: _Tokenizer) -> void
+
+    def advance_token: () -> token?
+
+    def advance_token!: () -> token
+
+    %a{pure} def next_token: () -> token?
+
+    def next_token!: () -> token
+
+    %a{pure} def next_type: () -> Symbol?
+
+    def parse: (Grammar::NonTerminal) -> Result
+
+    def parse_rule: (Grammar::Expression::t) -> Tree::t
+  end
+end

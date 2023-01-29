@@ -1,0 +1,9 @@
+module Parseg
+  interface _Tokenizer
+    # Returns a tuple of token type, start position, and the value String
+    #
+    # Returns `nil` if there are no more tokens left in the input.
+    #
+    def next_token: () -> [Symbol, Integer, String]?
+  end
+end

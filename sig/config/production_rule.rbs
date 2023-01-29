@@ -1,0 +1,13 @@
+module Parseg
+  class Config
+    class ProductionRule
+      attr_reader non_terminal: Symbol
+
+      attr_reader rule_name: Symbol
+
+      attr_reader sequence: Array[Expression::t]
+
+      def initialize: (non_terminal: Symbol, rule_name: Symbol) -> void
+    end
+  end
+end

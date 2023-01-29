@@ -1,0 +1,9 @@
+module Parseg
+  class Result
+    attr_reader token_locator: TokenLocator
+
+    attr_reader tree: Tree::t
+
+    def initialize: (tree: Tree::t, token_locator: TokenLocator) -> void
+  end
+end

@@ -1,0 +1,15 @@
+module Parseg
+  class TokenLocator
+    attr_reader tokens: Hash[Integer, token]
+
+    def initialize: () -> void
+
+    def register_token: (token) -> token
+
+    def token: (Integer id) -> token
+
+    def token_range: (Integer id) -> Range[Integer]
+
+    def string: (Integer id) -> String
+  end
+end

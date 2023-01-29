@@ -1,0 +1,7 @@
+module Parseg
+  class TreeFormatter
+    def format: (Result) -> untyped
+
+    def format0: (Tree::t, TokenLocator) -> untyped
+  end
+end

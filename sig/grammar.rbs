@@ -1,0 +1,145 @@
+module Parseg
+  class Grammar
+    module Expression
+      type t = TokenSymbol
+             | NonTerminalSymbol
+             | Alternation
+             | Repeat
+             | Optional
+             | Empty
+
+      interface _Expression
+        %a{pure} def next_expr: () -> t?
+
+        def my_first_tokens: () -> Set[Symbol | nil]
+      end
+
+      module FirstTokensUtil : _Expression
+        def first_tokens: () -> Set[Symbol | nil]
+      end
+
+      class TokenSymbol
+        attr_reader token: Symbol
+
+        attr_reader next_expr: t?
+
+        include FirstTokensUtil
+
+        def initialize: (Symbol, ?next_expr: t?) -> void
+
+        def my_first_tokens: () -> Set[Symbol | nil]
+
+        def +: (t) -> TokenSymbol
+      end
+
+      class NonTerminalSymbol
+        include FirstTokensUtil
+
+        attr_reader non_terminal: NonTerminal
+
+        attr_reader next_expr: t?
+
+        def initialize: (NonTerminal, ?next_expr: t?) -> void
+
+        def my_first_tokens: () -> Set[Symbol | nil]
+
+        def +: (t) -> NonTerminalSymbol
+      end
+
+      class Empty
+        include FirstTokensUtil
+
+        attr_reader next_expr: t?
+
+        def +: (t) -> t
+
+        @@instance: Empty
+        def self.instance: () -> Empty
+
+        def my_first_tokens: () -> Set[Symbol | nil]
+      end
+
+      class Alternation
+        include FirstTokensUtil
+
+        attr_reader expressions: Array[t]
+
+        attr_reader next_expr: t?
+
+        def initialize: (*t, ?next_expr: t?) -> void
+
+        def my_first_tokens: () -> Set[Symbol | nil]
+
+        def +: (t) -> Alternation
+      end
+
+      class Repeat
+        include FirstTokensUtil
+
+        type presence = :required | :optional | false
+
+        attr_reader content: t
+        attr_reader separator: t
+
+        attr_reader leading: presence
+        attr_reader trailing: presence
+
+        attr_reader next_expr: t?
+
+        def initialize: (content: t, separator: t, leading: presence, trailing: presence, ?next_expr: t?) -> void
+
+        def with: (?separator: t, ?leading: presence, ?trailing: presence) -> Repeat
+
+        def my_first_tokens: () -> Set[Symbol | nil]
+
+        def +: (t) -> Repeat
+      end
+
+      class Optional
+        include FirstTokensUtil
+
+        attr_reader expression: t
+
+        attr_reader next_expr: t?
+
+        def initialize: (t, ?next_expr: t?) -> void
+
+        def my_first_tokens: () -> Set[Symbol | nil]
+
+        def +: (t) -> Optional
+      end
+    end
+
+    class NonTerminal
+      attr_accessor rule: Expression::t
+
+      attr_reader name: Symbol
+
+      def initialize: (Symbol) -> void
+    end
+
+    interface _WithGrammar
+      def grammar: () -> Grammar
+    end
+
+    module DSL : _WithGrammar
+      def T: (Symbol) -> Expression::TokenSymbol
+
+      def NT: (Symbol) -> Expression::NonTerminalSymbol
+
+      def Opt: (Expression::t) -> Expression::Optional
+
+      def Repeat: (Expression::t) -> Expression::Repeat
+
+      def Alt: (*Expression::t) -> Expression::Alternation
+
+      def Empty: () -> Expression::Empty
+    end
+
+    attr_reader non_terminals: Hash[Symbol, NonTerminal]
+
+    def initialize: (*Symbol) ?{ (Grammar) [self: DSL] -> void } -> void
+
+    def []: (Symbol) -> NonTerminal
+  end
+end

@@ -1,0 +1,17 @@
+module Parseg
+  class Config
+    attr_reader production_rules: Hash[Symbol, Hash[Symbol, ProductionRule]]
+
+    attr_reader look_ahead_size: Integer
+
+    def non_terminal_symbols: () -> Set[Symbol]
+
+    def token_types: () -> Set[Symbol]
+
+    def initialize: (look_ahead_size: Integer) -> void
+
+    def self.load: (untyped content) -> Config
+
+    def self.load_rule_seqs: (production_rule_seqs_type) -> Array[Expression::t]
+  end
+end
