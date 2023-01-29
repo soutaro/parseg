@@ -84,7 +84,17 @@ module Parseg
 
           Tree::NonTerminalTree.new(expr, value, next_tree: next_tree)
         else
-          raise "Unexpected token: #{next_token} where #{first_tokens} is expected for #{expr.non_terminal.name}"
+          if first_tokens.include?(nil)
+            # ok to skip the rule
+
+            if expr.next_expr
+              next_tree = parse_rule(expr.next_expr)
+            end
+
+            Tree::NonTerminalTree.new(expr, nil, next_tree: next_tree)
+          else
+            raise "Unexpected token: #{next_token} where #{first_tokens} is expected for #{expr.non_terminal.name}"
+          end
         end
 
       when Grammar::Expression::Empty

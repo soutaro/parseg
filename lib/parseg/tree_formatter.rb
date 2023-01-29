@@ -12,7 +12,12 @@ module Parseg
         when Tree::TokenTree
           "#{t.expression.token}:`#{locator.string(t.token_id)}`"
         when Tree::NonTerminalTree
-          { t.expression.non_terminal.name => format0(t.value, locator) }
+          if t.value
+            { t.expression.non_terminal.name => format0(t.value, locator) }
+          else
+            { t.expression.non_terminal.name => nil }
+          end
+
         when Tree::AlternationTree
           format0(t.value, locator)
         when Tree::OptionalTree

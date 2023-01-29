@@ -52,7 +52,9 @@ module Parseg
       end
 
       def first_range(locator)
-        value.first_range(locator)
+        if value
+          value.first_range(locator)
+        end
       end
     end
 
