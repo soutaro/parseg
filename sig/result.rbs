@@ -4,6 +4,8 @@ module Parseg
 
     attr_reader tree: Tree::t
 
-    def initialize: (tree: Tree::t, token_locator: TokenLocator) -> void
+    attr_reader skip_tokens: Array[Integer]
+
+    def initialize: (tree: Tree::t, token_locator: TokenLocator, skip_tokens: Array[Integer]) -> void
   end
 end

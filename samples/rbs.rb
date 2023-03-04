@@ -7,7 +7,9 @@ def define_tokenizer(**defn)
     scan = StringScanner.new(string)
 
     tokenizer.singleton_class.define_method(:next_token) do
-      scan.skip(/\s+/)
+      while str = scan.scan(/(\s+)|(#[^\n]*)/)
+        # nop
+      end
 
       defn.each do |type, regexp|
         if string = scan.scan(regexp)

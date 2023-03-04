@@ -1,7 +1,12 @@
 module Parseg
   class TreeFormatter
     def format(result)
-      format0(result.tree, result.token_locator)
+      {
+        tree: format0(result.tree, result.token_locator),
+        skips: result.skip_tokens.map do |id|
+          result.token_locator.token(id)
+        end
+      }
     end
 
     def format0(tree, locator)

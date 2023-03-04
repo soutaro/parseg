@@ -1,5 +1,4 @@
-module Hello : _Enum[Integer]
-
+module Hello
   @foo: Integer
 
   self.@bar: String
@@ -8,7 +7,7 @@ module Hello : _Enum[Integer]
 
   Foo2 : Baz
 
-  def foo: () -> void
+  ]def foo: () -> void
          | () { () -> String } -> void
          | ...
 
