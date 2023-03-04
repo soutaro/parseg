@@ -28,6 +28,17 @@ module Parseg
           {
             repeat: t.values.map {|t| format0(t, locator) }
           }
+        when Tree::MissingTree
+          if id = t.token
+            {
+              :"🚨🚨🚨missing🚨🚨🚨" => "given=`#{locator.string(id)}`"
+            }
+          else
+            {
+              :"🚨🚨🚨missing🚨🚨🚨" => "given=EOF",
+              expected: t.expression.first_tokens
+            }
+          end
         end
       end
     end

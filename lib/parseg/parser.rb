@@ -28,6 +28,10 @@ module Parseg
       advance_token or raise
     end
 
+    def next_id
+      @next_token&.first
+    end
+
     def next_token
       @next_token
     end
@@ -56,7 +60,7 @@ module Parseg
       when Grammar::Expression::NonTerminalSymbol
         puts((" " * @level) + "non_terminal: " + expr.non_terminal.name.to_s)
       else
-        puts((" " * @level) + expr.class.to_s.split(/::/).last.downcase)
+        puts((" " * @level) + expr.class.to_s.split(/::/).last.downcase + ":")
       end
 
       case expr
@@ -70,7 +74,13 @@ module Parseg
 
           Tree::TokenTree.new(expr, id, next_tree: next_tree)
         else
-          raise "Unexpected token: #{next_token} where #{expr.token} is expected"
+          id, _, _, _ = next_token
+
+          if expr.next_expr
+            next_tree = parse_rule(expr.next_expr)
+          end
+
+          Tree::MissingTree.new(expr, id, next_tree: next_tree)
         end
 
       when Grammar::Expression::NonTerminalSymbol
@@ -93,7 +103,11 @@ module Parseg
 
             Tree::NonTerminalTree.new(expr, nil, next_tree: next_tree)
           else
-            raise "Unexpected token: #{next_token} where #{first_tokens} is expected for #{expr.non_terminal.name}"
+            if expr.next_expr
+              next_tree = parse_rule(expr.next_expr)
+            end
+
+            Tree::MissingTree.new(expr, next_id, next_tree: next_tree)
           end
         end
 
@@ -129,7 +143,11 @@ module Parseg
           end
         end
 
-        raise "Unexpected token: #{next_token} where #{expr.first_tokens} is expected"
+        if expr.next_expr
+          next_tree = parse_rule(expr.next_expr)
+        end
+
+        Tree::MissingTree.new(expr, next_id, next_tree: next_tree)
 
       when Grammar::Expression::Repeat
         values = [] #: Array[Tree::t]
@@ -145,9 +163,15 @@ module Parseg
           # skip
         end
 
-        while true
+        while next_token
           values << parse_rule(expr.content)
 
+          if expr.separator.first_tokens.include?(nil)
+            if expr.content.first_tokens.include?(next_type)
+              next
+            end
+          end
+          
           case expr.trailing
           when :required
             values << parse_rule(expr.separator)

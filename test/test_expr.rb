@@ -169,6 +169,8 @@ class TestExpr < Minitest::Test
       kBAR: /\|/,
       kAND: /\&/,
       kLT: /\</,
+      kEQ: /\=/,
+      kEND: /end/,
       kLBRACKET: /\[/,
       kRBRACKET: /\]/,
       kLBRACE: /\{/,
@@ -263,6 +265,47 @@ class TestExpr < Minitest::Test
       grammar[:rest_param].rule = T(:kSTAR) + NT(:type) + Opt(T(:tLIDENT))
 
       grammar[:keyword_rest_param].rule = T(:kSTAR2) + NT(:type) + Opt(T(:tLIDENT))
+
+      grammar[:module_name].rule =
+        Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + T(:tUIDENT)
+
+      type_names = -> (module_name:, interface_name:, alias_name:) {
+        list = []
+
+        list << T(:tUIDENT) if module_name
+        list << T(:tLIDENT) if alias_name
+        list << T(:tULIDENT) if interface_name
+
+        Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + Alt(*list)
+      }
+
+      grammar[:module_decl].rule =
+        T(:kMODULE) + NT(:module_name) + Alt(
+          NT(:module_alias_rhs),
+          Opt(NT(:type_params)) + NT(:module_decl_rhs)
+        )
+
+      grammar[:module_alias_rhs].rule =
+        T(:kEQ) + NT(:module_name)
+
+      grammar[:module_decl_rhs].rule =
+        Opt(T(:kCOLON) + NT(:module_self_decl)) + NT(:module_members) + T(:kEND)
+
+      grammar[:module_self_decl].rule =
+        Repeat(NT(:module_self_constraint)).with(separator: T(:kCOMMA))
+
+      grammar[:module_self_constraint].rule =
+        type_names[module_name: true, interface_name: true, alias_name: false] + Opt(
+          T(:tLBRACKET) + Repeat(NT(:type)).with(separator: T(:kCOMMA)) + T(:tRBRCKET)
+        )
+
+      grammar[:module_members].rule = Opt(
+        Repeat(
+          Alt(
+            NT(:module_decl)
+          )
+        )
+      )
     end
 
     formatter = Parseg::TreeFormatter.new()
@@ -272,7 +315,7 @@ class TestExpr < Minitest::Test
     # )
 
     pp formatter.format(
-      Parser.new(grammar: grammar, tokenizer: tokenizer["[A < String] (A) { () [self: String] -> void } -> String"]).parse(grammar[:method_type])
+      Parser.new(grammar: grammar, tokenizer: tokenizer["module A[Foo] : Foo end"]).parse(grammar[:module_decl])
     )
   end
 end

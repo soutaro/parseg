@@ -16,6 +16,8 @@ module Parseg
 
     def advance_token!: () -> token
 
+    %a{pure} def next_id: () -> Integer?
+
     %a{pure} def next_token: () -> token?
 
     def next_token!: () -> token

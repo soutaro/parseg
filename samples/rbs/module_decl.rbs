@@ -1,0 +1,16 @@
+module Hello : _Enum[Integer]
+
+  @foo: Integer
+
+  self.@bar: String
+
+  Foo: Bar
+
+  Foo2 : Baz
+
+  def foo: () -> void
+         | () { () -> String } -> void
+         | ...
+
+  def baz: () -> String
+end

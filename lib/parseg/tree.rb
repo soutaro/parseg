@@ -137,5 +137,21 @@ module Parseg
         end
       end
     end
+
+    class MissingTree < Base
+      attr_reader :token
+
+      def initialize(expr, token, next_tree:)
+        @expression = expr
+        @token = token
+        @next_tree = next_tree
+      end
+
+      def first_range(locator)
+        if token
+          locator.token_range(token)
+        end
+      end
+    end
   end
 end

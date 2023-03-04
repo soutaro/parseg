@@ -6,6 +6,7 @@ module Parseg
            | AlternationTree
            | RepeatTree
            | OptionalTree
+           | MissingTree
 
     class Base[EXPR]
       attr_reader next_tree: t?
@@ -58,6 +59,12 @@ module Parseg
       attr_reader value: t?
 
       def initialize: (Grammar::Expression::Optional, t?, next_tree: t?) -> void
+    end
+
+    class MissingTree < Base[Grammar::Expression::t]
+      attr_reader token: Integer?
+
+      def initialize: (Grammar::Expression::t, Integer?, next_tree: t?) -> void
     end
   end
 end
