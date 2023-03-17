@@ -13,7 +13,7 @@ def define_tokenizer(**defn)
 
       defn.each do |type, regexp|
         if string = scan.scan(regexp)
-          return [type, scan.charpos, string]
+          return [type, scan.charpos - string.size, string]
         end
       end
 
@@ -83,7 +83,7 @@ grammar = Grammar.new() do |grammar|
       T(:kLBRACKET) + Repeat(NT(:type)).with(separator: T(:kCOMMA)) + T(:kRBRACKET)
     ),
     T(:kSINGLETON) + T(:kLPAREN) + NT(:type_name) + T(:kRPAREN),
-    T(:kLBRACKET) + Opt(Repeat(NT(:type)).with(separator: T(:kCOMMA)))  + T(:kRBRACKET)
+    T(:kLBRACKET) + Opt(Repeat(NT(:type)).with(separator: T(:kCOMMA))) + T(:kRBRACKET)
   )
 
   grammar[:type_name].rule =
@@ -225,6 +225,8 @@ grammar = Grammar.new() do |grammar|
         NT(:method_types)
       )
     )
+
+  grammar[:start].rule = Repeat(NT(:module_decl))
 end
 
 [tokenizer, grammar]

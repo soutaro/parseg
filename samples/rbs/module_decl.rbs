@@ -1,15 +1,6 @@
-module Hello
-  @foo: Integer
+module A[A, B, C]
+  module B
+  end
 
-  self.@bar: String
-
-  Foo: Bar
-
-  Foo2 : Baz
-
-  ]def foo: () -> void
-         | () { () -> String } -> void
-         | ...
-
-  def baz: () -> String
+  def foo: (id: untyped ->
 end

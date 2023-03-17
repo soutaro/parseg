@@ -1,0 +1,90 @@
+module LanguageServer
+  module Protocol
+    type position = { line: Integer, character: Integer }
+
+    type range = { start: position, end: position }
+
+    module Interface
+      class DocumentSymbol
+        attr_reader name: String
+
+        attr_reader detail: String?
+
+        attr_reader tags: Array[Integer]
+
+        attr_reader kind: Integer
+
+        attr_reader range: range
+
+        attr_reader selection_range: range
+
+        attr_reader children: Array[DocumentSymbol]
+
+        def initialize: (
+          name: String,
+          ?detail: String?,
+          ?tags: Array[Integer],
+          kind: Integer,
+          range: range,
+          selection_range: range,
+          ?children: Array[DocumentSymbol]
+        ) -> void
+      end
+
+      class Diagnostic
+        attr_reader range: range
+
+        attr_reader severity: Integer
+
+        attr_reader code: String?
+
+        attr_reader message: String
+
+        def initialize: (
+          range: range,
+          severity: Integer,
+          ?code: String?,
+          message: String
+        ) -> void
+      end
+    end
+
+    module Constant
+      module SymbolKind
+        FILE: Integer
+        MODULE: Integer
+        NAMESPACE: Integer
+        PACKAGE: Integer
+        CLASS: Integer
+        METHOD: Integer
+        PROPERTY: Integer
+        FIELD: Integer
+        CONSTRUCTOR: Integer
+        ENUM: Integer
+        INTERFACE: Integer
+        FUNCTION: Integer
+        VARIABLE: Integer
+        CONSTANT: Integer
+        STRING: Integer
+        NUMBER: Integer
+        BOOLEAN: Integer
+        ARRAY: Integer
+        OBJECT: Integer
+        KEY: Integer
+        NULL: Integer
+        ENUM_MEMBER: Integer
+        STRUCT: Integer
+        EVENT: Integer
+        OPERATOR: Integer
+        TYPE_PARAMETER: Integer
+      end
+
+      module DiagnosticSeverity
+        ERROR: Integer
+        WARNING: Integer
+        INFORMATION: Integer
+        HINT: Integer
+      end
+    end
+  end
+end

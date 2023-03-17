@@ -58,7 +58,12 @@ module Parseg
 
     def with_next_tokens(next_tokens, next_expr)
       if next_expr
-        yield(next_tokens + next_expr.first_tokens)
+        fts = next_expr.first_tokens
+        if fts.include?(nil)
+          yield(next_tokens + next_expr.first_tokens)
+        else
+          yield(next_expr.first_tokens)
+        end
       else
         yield next_tokens
       end
@@ -67,10 +72,13 @@ module Parseg
     def skip_unknown_tokens(next_tokens, next_expr, skip_tokens)
       # return next_token
 
+      STDERR.puts((" " * (@level + 2)) + ">> skipping tokens other than: #{next_tokens.inspect}")
+
       with_next_tokens(next_tokens, next_expr) do |next_tokens|
         while next_type
           break if next_tokens.include?(next_type)
           skip_tokens << next_id!
+          STDERR.puts((" " * @level) + "  | Skipped #{next_token}")
           advance_token
         end
 
@@ -83,11 +91,11 @@ module Parseg
 
       case expr
       when Grammar::Expression::TokenSymbol
-        puts((" " * @level) + "token: " + expr.token.to_s + ", next_tokens: #{next_tokens}")
+        STDERR.puts((" " * @level) + "token: " + expr.token.to_s + ", next_tokens: #{next_tokens}")
       when Grammar::Expression::NonTerminalSymbol
-        puts((" " * @level) + "non_terminal: " + expr.non_terminal.name.to_s + ", next_tokens: #{next_tokens}")
+        STDERR.puts((" " * @level) + "non_terminal: " + expr.non_terminal.name.to_s + ", next_tokens: #{next_tokens}")
       else
-        puts((" " * @level) + expr.class.to_s.split(/::/).last.downcase + ":"  + ", next_tokens: #{next_tokens}")
+        STDERR.puts((" " * @level) + expr.class.to_s.split(/::/).last.downcase + ":"  + ", next_tokens: #{next_tokens}")
       end
 
       skip_unknown_tokens(expr.first_tokens + next_tokens, nil, skip_tokens)
@@ -192,8 +200,8 @@ module Parseg
       when Grammar::Expression::Repeat
         values = [] #: Array[Tree::t]
 
-        tokens_before_content = next_tokens + expr.content.first_tokens
-        tokens_before_separator = next_tokens + expr.separator.first_tokens
+        tokens_before_content = with_next_tokens(next_tokens, expr.next_expr) {|next_tokens| next_tokens + expr.content.first_tokens }
+        tokens_before_separator = with_next_tokens(next_tokens, expr.next_expr) {|next_tokens| next_tokens + expr.separator.first_tokens }
         if expr.separator.first_tokens.include?(nil)
           tokens_before_separator.merge(expr.content.first_tokens)
         end
