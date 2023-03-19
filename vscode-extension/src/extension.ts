@@ -17,13 +17,21 @@ import {
 let client: LanguageClient;
 
 async function start() {
+	const grammarPath = workspace.getConfiguration('parseg-lsp').get("grammar") as (string | undefined)
+	const startSymbol = workspace.getConfiguration('parseg-lsp').get('start') as string
+
+	if (!grammarPath || grammarPath.length == 0) {
+		await window.showErrorMessage("Parseg Demo cannot be started", { modal: true, detail: "Specify grammar file in VSCode setting" })
+		return
+	}
+
 	const serverOptions: ServerOptions = {
 		command: "bundle",
 		args: [
 			"exec",
 			"parseg-lsp",
-			"rbs.rb",
-			"start"
+			grammarPath,
+			startSymbol
 		],
 		options: {
 			shell: true
@@ -55,7 +63,11 @@ export async function activate(context: ExtensionContext) {
 			}
 		}
 
-		client = await start();
+		const c = await start();
+
+		if (c) {
+			client = c
+		}
 	});
 	context.subscriptions.push(disposable);
 }

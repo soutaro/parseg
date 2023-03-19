@@ -17,6 +17,25 @@
         "command": "parseg-lsp-demo.startDemo",
         "title": "Start Parseg LSP demo"
       }
+    ],
+    "configuration": [
+      {
+        "title": "Parseg Demo LSP",
+        "properties": {
+          "parseg-lsp.grammar": {
+            "title": "Grammar file",
+            "markdownDescription": "Path to the grammar definition from the working directory",
+            "type": "string",
+            "default": null
+          },
+          "parseg-lsp.start": {
+            "title": "Start symbol",
+            "markdownDescription": "The start symbol of the grammar",
+            "type": "string",
+            "default": "start"
+          }
+        }
+      }
     ]
   },
   "scripts": {
