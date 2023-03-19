@@ -4,7 +4,6 @@ PATH
     parseg (0.1.0)
       language_server-protocol (= 3.17)
       set (~> 1.0.3)
-      strong_json (~> 2.1.2)
       yaml (~> 0.2.1)
 
 GEM
@@ -57,7 +56,6 @@ GEM
       securerandom (>= 0.1)
       strscan (>= 1.0.0)
       terminal-table (>= 2, < 4)
-    strong_json (2.1.2)
     strscan (3.0.6)
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)

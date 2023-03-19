@@ -3,7 +3,6 @@
 require_relative "parseg/version"
 
 require "yaml"
-require "strong_json"
 
 require "parseg/grammar"
 require "parseg/token_locator"
