@@ -11,14 +11,14 @@ module Parseg
     end
 
     def advance_token
-      last_token = @next_token
+      last_token = @current_token
 
       if (type, offset, value = tokenizer.next_token)
         @token_id += 1
-        nt = @next_token = [@token_id, type, offset, value]
+        nt = @current_token = [@token_id, type, offset, value]
         token_locator.register_token(nt)
       else
-        @next_token = nil
+        @current_token = nil
       end
 
       last_token
@@ -28,24 +28,24 @@ module Parseg
       advance_token or raise
     end
 
-    def next_id
-      @next_token&.first
+    def current_token
+      @current_token
     end
 
-    def next_id!
-      next_id or raise
+    def current_token!
+      @current_token || raise
     end
 
-    def next_token
-      @next_token
+    def token_id
+      @current_token&.first
     end
 
-    def next_type
-      next_token&.[](1)
+    def token_id!
+      token_id or raise
     end
 
-    def next_token!
-      @next_token || raise
+    def token_type
+      current_token&.[](1)
     end
 
     def parse(non_terminal)
@@ -69,14 +69,14 @@ module Parseg
       STDERR.puts((" " * (@level + 2)) + ">> skipping tokens other than: #{next_tokens.inspect}")
 
       with_next_tokens(next_tokens, next_expr) do |next_tokens|
-        while next_type
-          break if next_tokens.include?(next_type)
-          skip_tokens << next_id!
-          STDERR.puts((" " * @level) + "  | Skipped #{next_token}")
+        while token_type
+          break if next_tokens.include?(token_type)
+          skip_tokens << token_id!
+          STDERR.puts((" " * @level) + "  | Skipped #{current_token}")
           advance_token
         end
 
-        next_token
+        current_token
       end
     end
 
@@ -96,7 +96,7 @@ module Parseg
 
       case expr
       when Grammar::Expression::TokenSymbol
-        if next_type == expr.token
+        if token_type == expr.token
           id, _, _, _ = advance_token!
 
           if expr.next_expr
@@ -105,7 +105,7 @@ module Parseg
 
           Tree::TokenTree.new(expr, id, next_tree: next_tree)
         else
-          id = next_id
+          id = token_id
 
           if expr.next_expr
             next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
@@ -117,7 +117,7 @@ module Parseg
       when Grammar::Expression::NonTerminalSymbol
         first_tokens = expr.non_terminal.rule.first_tokens
 
-        if first_tokens.include?(next_type)
+        if first_tokens.include?(token_type)
           value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
             parse_rule(expr.non_terminal.rule, next_tokens, skip_tokens)
           end
@@ -137,7 +137,7 @@ module Parseg
 
             Tree::NonTerminalTree.new(expr, nil, next_tree: next_tree)
           else
-            nid = next_id
+            nid = token_id
 
             if expr.next_expr
               next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
@@ -156,7 +156,7 @@ module Parseg
       when Grammar::Expression::Optional
         first_tokens = expr.expression.first_tokens
 
-        if first_tokens.include?(next_type)
+        if first_tokens.include?(token_type)
           value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
             parse_rule(expr.expression, next_tokens, skip_tokens)
           end
@@ -169,10 +169,10 @@ module Parseg
         Tree::OptionalTree.new(expr, value, next_tree: next_tree)
 
       when Grammar::Expression::Alternation
-        nid = next_id()
+        nid = token_id()
 
         expr.expressions.each do |opt|
-          if opt.first_tokens.include?(next_type)
+          if opt.first_tokens.include?(token_type)
             value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
               parse_rule(opt, next_tokens, skip_tokens)
             end
@@ -204,18 +204,18 @@ module Parseg
         when :required
           values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
         when :optional
-          if expr.separator.first_tokens.include?(next_type)
+          if expr.separator.first_tokens.include?(token_type)
             values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
           end
         when false
           # skip
         end
 
-        while next_token
+        while current_token
           values << parse_rule(expr.content, tokens_before_separator, skip_tokens)
 
           if expr.separator.first_tokens.include?(nil)
-            if expr.content.first_tokens.include?(next_type)
+            if expr.content.first_tokens.include?(token_type)
               next
             end
           end
@@ -224,19 +224,19 @@ module Parseg
           when :required
             values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
 
-            unless expr.content.first_tokens.include?(next_type)
+            unless expr.content.first_tokens.include?(token_type)
               break
             end
           when :optional
-            if expr.separator.first_tokens.include?(next_type)
+            if expr.separator.first_tokens.include?(token_type)
               values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
             end
 
-            unless expr.content.first_tokens.include?(next_type)
+            unless expr.content.first_tokens.include?(token_type)
               break
             end
           when false
-            if expr.separator.first_tokens.include?(next_type)
+            if expr.separator.first_tokens.include?(token_type)
               values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
             else
               break

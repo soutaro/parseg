@@ -1,4 +1,10 @@
 module Parseg
+  #
+  # # Tokens
+  #
+  # Parser has one token that is returned from `#current_token`.
+  #
+  #
   class Parser
     attr_reader grammar: Grammar
 
@@ -8,23 +14,43 @@ module Parseg
 
     @token_id: Integer
 
-    @next_token: token?
+    @current_token: token?
 
     def initialize: (grammar: Grammar, tokenizer: _Tokenizer) -> void
 
+    # Update `#current_token` by reading a token from `#tokenizer`
+    #
+    # Returns the old `#current_token`.
+    #
     def advance_token: () -> token?
 
+    # Update `#current_token` by reading a token from `#rokenizer`
+    #
+    # Returns the old `#current_token`.
+    # Raises an exception if `#current_token` is `nil`.
+    #
     def advance_token!: () -> token
 
-    %a{pure} def next_id: () -> Integer?
+    # Returns the token at the head of the input
+    #
+    %a{pure} def current_token: () -> token?
 
-    def next_id!: () -> Integer
+    # Returns the token at the head of the input or raise an exception
+    #
+    def current_token!: () -> token
 
-    %a{pure} def next_token: () -> token?
+    # Returns `#id` of `#current_token`
+    #
+    %a{pure} def token_id: () -> Integer?
 
-    def next_token!: () -> token
+    # Returns `#id` of `#current_token`
+    #
+    # Raises an exception if `#current_token` is `nil`.
+    #
+    def token_id!: () -> Integer
 
-    %a{pure} def next_type: () -> Symbol?
+    # Returns the `#type` of the `#current_token`
+    %a{pure} def token_type: () -> Symbol?
 
     def parse: (Grammar::NonTerminal) -> Result
 
