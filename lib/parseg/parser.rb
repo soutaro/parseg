@@ -59,19 +59,13 @@ module Parseg
     def with_next_tokens(next_tokens, next_expr)
       if next_expr
         fts = next_expr.first_tokens
-        if fts.include?(nil)
-          yield(next_tokens + next_expr.first_tokens)
-        else
-          yield(next_expr.first_tokens)
-        end
+        yield(next_tokens + next_expr.first_tokens)
       else
         yield next_tokens
       end
     end
 
     def skip_unknown_tokens(next_tokens, next_expr, skip_tokens)
-      # return next_token
-
       STDERR.puts((" " * (@level + 2)) + ">> skipping tokens other than: #{next_tokens.inspect}")
 
       with_next_tokens(next_tokens, next_expr) do |next_tokens|

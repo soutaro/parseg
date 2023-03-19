@@ -1,6 +1,2 @@
-module A[A, B, C]
-  module B
-  end
-
-  def foo: (id: untyped ->
-end
+module A
+  def foo: () { }
