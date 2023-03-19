@@ -7,7 +7,6 @@ module Parseg
       @tokenizer = tokenizer
       @token_locator = TokenLocator.new()
       @token_id = 0
-      @level = 0
     end
 
     def advance_token
@@ -66,192 +65,193 @@ module Parseg
     end
 
     def skip_unknown_tokens(next_tokens, next_expr, skip_tokens)
-      STDERR.puts((" " * (@level + 2)) + ">> skipping tokens other than: #{next_tokens.inspect}")
+      Parseg.logger.tagged("#skip_unknown_tokens") do
+        Parseg.logger.info(">> skipping tokens other than: #{next_tokens.inspect}")
 
-      with_next_tokens(next_tokens, next_expr) do |next_tokens|
-        while token_type
-          break if next_tokens.include?(token_type)
-          skip_tokens << token_id!
-          STDERR.puts((" " * @level) + "  | Skipped #{current_token}")
-          advance_token
+        with_next_tokens(next_tokens, next_expr) do |next_tokens|
+          while token_type
+            break if next_tokens.include?(token_type)
+            skip_tokens << token_id!
+            Parseg.logger.info("  | Skipped #{current_token}")
+            advance_token
+          end
+
+          current_token
         end
-
-        current_token
       end
     end
 
     def parse_rule(expr, next_tokens, skip_tokens)
-      @level += 1
-
-      case expr
-      when Grammar::Expression::TokenSymbol
-        STDERR.puts((" " * @level) + "token: " + expr.token.to_s + ", next_tokens: #{next_tokens}")
-      when Grammar::Expression::NonTerminalSymbol
-        STDERR.puts((" " * @level) + "non_terminal: " + expr.non_terminal.name.to_s + ", next_tokens: #{next_tokens}")
-      else
-        STDERR.puts((" " * @level) + expr.class.to_s.split(/::/).last.downcase + ":"  + ", next_tokens: #{next_tokens}")
-      end
-
-      skip_unknown_tokens(expr.first_tokens + next_tokens, nil, skip_tokens)
-
-      case expr
-      when Grammar::Expression::TokenSymbol
-        if token_type == expr.token
-          id, _, _, _ = advance_token!
-
-          if expr.next_expr
-            next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-          end
-
-          Tree::TokenTree.new(expr, id, next_tree: next_tree)
+      summary =
+        case expr
+        when Grammar::Expression::TokenSymbol
+          "token: " + expr.token.to_s
+        when Grammar::Expression::NonTerminalSymbol
+          "non_terminal: " + expr.non_terminal.name.to_s
         else
-          id = token_id
-
-          if expr.next_expr
-            next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-          end
-
-          Tree::MissingTree.new(expr, id, next_tree: next_tree)
+          expr.class.to_s.split(/::/).last.downcase + ":"
         end
 
-      when Grammar::Expression::NonTerminalSymbol
-        first_tokens = expr.non_terminal.rule.first_tokens
+      Parseg.logger.tagged("#parse_rule(#{summary})") do
+        skip_unknown_tokens(expr.first_tokens + next_tokens, nil, skip_tokens)
 
-        if first_tokens.include?(token_type)
-          value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
-            parse_rule(expr.non_terminal.rule, next_tokens, skip_tokens)
-          end
-
-          if expr.next_expr
-            next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-          end
-
-          Tree::NonTerminalTree.new(expr, value, next_tree: next_tree)
-        else
-          if first_tokens.include?(nil)
-            # ok to skip the rule
+        case expr
+        when Grammar::Expression::TokenSymbol
+          if token_type == expr.token
+            id, _, _, _ = advance_token!
 
             if expr.next_expr
               next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
             end
 
-            Tree::NonTerminalTree.new(expr, nil, next_tree: next_tree)
+            Tree::TokenTree.new(expr, id, next_tree: next_tree)
           else
-            nid = token_id
+            id = token_id
 
             if expr.next_expr
               next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
             end
 
-            Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+            Tree::MissingTree.new(expr, id, next_tree: next_tree)
           end
-        end
 
-      when Grammar::Expression::Empty
-        if expr.next_expr
-          next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-        end
-        Tree::EmptyTree.new(expr, next_tree: next_tree)
+        when Grammar::Expression::NonTerminalSymbol
+          first_tokens = expr.non_terminal.rule.first_tokens
 
-      when Grammar::Expression::Optional
-        first_tokens = expr.expression.first_tokens
-
-        if first_tokens.include?(token_type)
-          value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
-            parse_rule(expr.expression, next_tokens, skip_tokens)
-          end
-        end
-
-        if expr.next_expr
-          next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-        end
-
-        Tree::OptionalTree.new(expr, value, next_tree: next_tree)
-
-      when Grammar::Expression::Alternation
-        nid = token_id()
-
-        expr.expressions.each do |opt|
-          if opt.first_tokens.include?(token_type)
+          if first_tokens.include?(token_type)
             value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
-              parse_rule(opt, next_tokens, skip_tokens)
+              parse_rule(expr.non_terminal.rule, next_tokens, skip_tokens)
             end
 
             if expr.next_expr
               next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
             end
 
-            return Tree::AlternationTree.new(expr, value, next_tree: next_tree)
-          end
-        end
+            Tree::NonTerminalTree.new(expr, value, next_tree: next_tree)
+          else
+            if first_tokens.include?(nil)
+              # ok to skip the rule
 
-        if expr.next_expr
-          next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-        end
+              if expr.next_expr
+                next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+              end
 
-        Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+              Tree::NonTerminalTree.new(expr, nil, next_tree: next_tree)
+            else
+              nid = token_id
 
-      when Grammar::Expression::Repeat
-        values = [] #: Array[Tree::t]
+              if expr.next_expr
+                next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+              end
 
-        tokens_before_content = with_next_tokens(next_tokens, expr.next_expr) {|next_tokens| next_tokens + expr.content.first_tokens }
-        tokens_before_separator = with_next_tokens(next_tokens, expr.next_expr) {|next_tokens| next_tokens + expr.separator.first_tokens }
-        if expr.separator.first_tokens.include?(nil)
-          tokens_before_separator.merge(expr.content.first_tokens)
-        end
-
-        case expr.leading
-        when :required
-          values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-        when :optional
-          if expr.separator.first_tokens.include?(token_type)
-            values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-          end
-        when false
-          # skip
-        end
-
-        while current_token
-          values << parse_rule(expr.content, tokens_before_separator, skip_tokens)
-
-          if expr.separator.first_tokens.include?(nil)
-            if expr.content.first_tokens.include?(token_type)
-              next
+              Tree::MissingTree.new(expr, nid, next_tree: next_tree)
             end
           end
 
-          case expr.trailing
+        when Grammar::Expression::Empty
+          if expr.next_expr
+            next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+          end
+          Tree::EmptyTree.new(expr, next_tree: next_tree)
+
+        when Grammar::Expression::Optional
+          first_tokens = expr.expression.first_tokens
+
+          if first_tokens.include?(token_type)
+            value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
+              parse_rule(expr.expression, next_tokens, skip_tokens)
+            end
+          end
+
+          if expr.next_expr
+            next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+          end
+
+          Tree::OptionalTree.new(expr, value, next_tree: next_tree)
+
+        when Grammar::Expression::Alternation
+          nid = token_id()
+
+          expr.expressions.each do |opt|
+            if opt.first_tokens.include?(token_type)
+              value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
+                parse_rule(opt, next_tokens, skip_tokens)
+              end
+
+              if expr.next_expr
+                next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+              end
+
+              return Tree::AlternationTree.new(expr, value, next_tree: next_tree)
+            end
+          end
+
+          if expr.next_expr
+            next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+          end
+
+          Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+
+        when Grammar::Expression::Repeat
+          values = [] #: Array[Tree::t]
+
+          tokens_before_content = with_next_tokens(next_tokens, expr.next_expr) {|next_tokens| next_tokens + expr.content.first_tokens }
+          tokens_before_separator = with_next_tokens(next_tokens, expr.next_expr) {|next_tokens| next_tokens + expr.separator.first_tokens }
+          if expr.separator.first_tokens.include?(nil)
+            tokens_before_separator.merge(expr.content.first_tokens)
+          end
+
+          case expr.leading
           when :required
             values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-
-            unless expr.content.first_tokens.include?(token_type)
-              break
-            end
           when :optional
             if expr.separator.first_tokens.include?(token_type)
               values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
             end
-
-            unless expr.content.first_tokens.include?(token_type)
-              break
-            end
           when false
-            if expr.separator.first_tokens.include?(token_type)
+            # skip
+          end
+
+          while current_token
+            values << parse_rule(expr.content, tokens_before_separator, skip_tokens)
+
+            if expr.separator.first_tokens.include?(nil)
+              if expr.content.first_tokens.include?(token_type)
+                next
+              end
+            end
+
+            case expr.trailing
+            when :required
               values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-            else
-              break
+
+              unless expr.content.first_tokens.include?(token_type)
+                break
+              end
+            when :optional
+              if expr.separator.first_tokens.include?(token_type)
+                values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
+              end
+
+              unless expr.content.first_tokens.include?(token_type)
+                break
+              end
+            when false
+              if expr.separator.first_tokens.include?(token_type)
+                values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
+              else
+                break
+              end
             end
           end
-        end
 
-        if expr.next_expr
-          next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-        end
+          if expr.next_expr
+            next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+          end
 
-        Tree::RepeatTree.new(expr, values, next_tree: next_tree)
+          Tree::RepeatTree.new(expr, values, next_tree: next_tree)
+        end
       end
-    ensure
-      @level -= 1
     end
   end
 end

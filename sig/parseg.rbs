@@ -2,4 +2,23 @@ module Parseg
   VERSION: String
 
   type token = [Integer, Symbol, Integer, String]
+
+  attr_reader self.logger: ActiveSupport::TaggedLogging & _Logger
+
+  interface _Logger
+    def error: (String | Exception) -> void
+             | () { () -> String } -> void
+
+    def info: (String | Exception) -> void
+            | () { () -> String } -> void
+
+    def fatal: (String | Exception) -> void
+             | () { () -> String } -> void
+
+    def warn: (String | Exception) -> void
+            | () { () -> String } -> void
+
+    def tagged: [A] (*String) { () -> A } -> A
+              | (*String) -> self
+  end
 end
