@@ -1,3 +1,5 @@
 module A
-  def foo: () { } -> void
+  def foo: () ]
+
+  def
 end

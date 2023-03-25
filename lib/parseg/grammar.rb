@@ -97,6 +97,10 @@ module Parseg
             self.class.new(token, next_expr: expr)
           end
         end
+
+        def consumable_tokens
+          Set[token] + (next_expr ? next_expr.consumable_tokens : Set[])
+        end
       end
 
       class NonTerminalSymbol
@@ -120,6 +124,14 @@ module Parseg
             self.class.new(non_terminal, next_expr: expr)
           end
         end
+
+        def consumable_tokens
+          toks = non_terminal.rule.consumable_tokens
+          if next_expr
+            toks.merge(next_expr.consumable_tokens)
+          end
+          toks
+        end
       end
 
       class Empty
@@ -141,6 +153,14 @@ module Parseg
 
         def +(t)
           t
+        end
+
+        def consumable_tokens
+          if next_expr
+            next_expr.consumable_tokens
+          else
+            Set[]
+          end
         end
       end
 
@@ -170,6 +190,22 @@ module Parseg
           else
             Alternation.new(*expressions, next_expr: expr)
           end
+        end
+
+        def consumable_tokens
+          toks = Set[] #: Set[Symbol]
+          if next_expr
+            toks.merge(next_expr.consumable_tokens)
+          end
+
+          # Only the first tokens of each alternation can be consumable
+          expressions.each do |expr|
+            expr.first_tokens.each do |tok|
+              toks << tok if tok
+            end
+          end
+
+          toks
         end
       end
 
@@ -204,6 +240,21 @@ module Parseg
             Repeat.new(content: content, separator: separator, next_expr: expr)
           end
         end
+
+        def consumable_tokens
+          toks = Set[] #: Set[Symbol]
+          if next_expr
+              toks.merge(next_expr.consumable_tokens)
+          end
+
+          [content, separator].each do |expr|
+            expr.first_tokens.each do |tok|
+              toks << tok if tok
+            end
+          end
+
+          toks
+        end
       end
 
       class Optional
@@ -226,6 +277,21 @@ module Parseg
           else
             Optional.new(expression, next_expr: expr)
           end
+        end
+
+        def consumable_tokens
+          toks = Set[] #: Set[Symbol]
+          if next_expr
+              toks.merge(next_expr.consumable_tokens)
+          end
+
+          if expression
+            expression.first_tokens.each do |tok|
+              toks << tok if tok
+            end
+          end
+
+          toks
         end
       end
     end

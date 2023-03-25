@@ -12,6 +12,10 @@ module Parseg
         %a{pure} def next_expr: () -> t?
 
         def my_first_tokens: () -> Set[Symbol | nil]
+
+        # Set of tokens that can be used to construct a tree that corresponds to the expression
+        #
+        def consumable_tokens: () -> Set[Symbol]
       end
 
       module FirstTokensUtil : _Expression
@@ -30,6 +34,8 @@ module Parseg
         def my_first_tokens: () -> Set[Symbol | nil]
 
         def +: (t) -> TokenSymbol
+
+        def consumable_tokens: () -> Set[Symbol]
       end
 
       class NonTerminalSymbol
@@ -44,6 +50,8 @@ module Parseg
         def my_first_tokens: () -> Set[Symbol | nil]
 
         def +: (t) -> NonTerminalSymbol
+
+        def consumable_tokens: () -> Set[Symbol]
       end
 
       class Empty
@@ -57,6 +65,8 @@ module Parseg
         def self.instance: () -> Empty
 
         def my_first_tokens: () -> Set[Symbol | nil]
+
+        def consumable_tokens: () -> Set[Symbol]
       end
 
       class Alternation
@@ -71,6 +81,8 @@ module Parseg
         def my_first_tokens: () -> Set[Symbol | nil]
 
         def +: (t) -> Alternation
+
+        def consumable_tokens: () -> Set[Symbol]
       end
 
       class Repeat
@@ -86,6 +98,8 @@ module Parseg
         def my_first_tokens: () -> Set[Symbol | nil]
 
         def +: (t) -> Repeat
+
+        def consumable_tokens: () -> Set[Symbol]
       end
 
       class Optional
@@ -100,11 +114,13 @@ module Parseg
         def my_first_tokens: () -> Set[Symbol | nil]
 
         def +: (t) -> Optional
+
+        def consumable_tokens: () -> Set[Symbol]
       end
     end
 
     class NonTerminal
-      attr_accessor rule: Expression::NonTerminalSymbol
+      attr_accessor rule: Expression::NonTerminalSymbol | Expression::Empty
 
       attr_reader name: Symbol
 
