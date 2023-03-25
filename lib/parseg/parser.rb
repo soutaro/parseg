@@ -250,12 +250,17 @@ module Parseg
             break unless current_token
 
             separator_first_tokens = expr.separator.first_tokens
-            if separator_first_tokens.include?(token_type) || separator_first_tokens.include?(nil)
+            case
+            when separator_first_tokens.include?(token_type)
               values << parse_rule(
                 expr.separator,
                 consumable_for_separator,
                 skip_tokens
               )
+            when separator_first_tokens.include?(nil)
+              unless expr.content.first_tokens.include?(token_type)
+                break
+              end
             else
               break
             end
