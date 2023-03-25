@@ -19,6 +19,18 @@ module Parseg
 
       def each: () { (t) -> void } -> void
               | () -> Enumerator[t, void]
+
+      # Indicates if there is an error inside this tree
+      #
+      # * Returns `nil` if everything under the tree is ok (no error)
+      # * Returns an `MissingTree` if error is at the same level
+      # * Returns no `MissingTree` object if one of the sub tree has error
+      #
+      def error_tree?: () -> Array[t]?
+
+      def immediate_error_tree?: () -> Array[MissingTree]?
+
+      def error_trees: (Array[t]) -> Array[t]
     end
 
     class TokenTree < Base[Grammar::Expression::TokenSymbol]
@@ -31,6 +43,8 @@ module Parseg
       attr_reader value: t?
 
       def initialize: (Grammar::Expression::NonTerminalSymbol, t?, next_tree: t?) -> void
+
+      def error_trees: (Array[t]) -> Array[t]
     end
 
     class EmptyTree < Base[Grammar::Expression::Empty]
@@ -41,6 +55,8 @@ module Parseg
       attr_reader value: t
 
       def initialize: (Grammar::Expression::Alternation, t, next_tree: t?) -> void
+
+      def error_trees: (Array[t]) -> Array[t]
     end
 
     class RepeatTree < Base[Grammar::Expression::Repeat]
@@ -53,18 +69,24 @@ module Parseg
                         | () -> Enumerator[t, void]
 
       def initialize: (Grammar::Expression::Repeat, Array[t], next_tree: t?) -> void
+
+      def error_trees: (Array[t]) -> Array[t]
     end
 
     class OptionalTree < Base[Grammar::Expression::Optional]
       attr_reader value: t?
 
       def initialize: (Grammar::Expression::Optional, t?, next_tree: t?) -> void
+
+      def error_trees: (Array[t]) -> Array[t]
     end
 
     class MissingTree < Base[Grammar::Expression::t]
       attr_reader token: Integer?
 
       def initialize: (Grammar::Expression::t, Integer?, next_tree: t?) -> void
+
+      def error_trees: (Array[t]) -> Array[t]
     end
   end
 end

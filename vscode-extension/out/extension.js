@@ -11,14 +11,26 @@ let session;
 async function start() {
     const grammarPath = vscode_1.workspace.getConfiguration('parseg-lsp').get("grammar");
     const startSymbol = vscode_1.workspace.getConfiguration('parseg-lsp').get('start');
+    const errorTolerant = vscode_1.workspace.getConfiguration('parseg-lsp').get("error_tolerant");
+    const skipTokens = vscode_1.workspace.getConfiguration('parseg-lsp').get("skip_tokens");
+    const options = [];
+    if (!errorTolerant) {
+        options.push("--no-error-tolerant");
+    }
+    if (!skipTokens) {
+        options.push("--no-skip-tokens");
+    }
     if (!grammarPath || grammarPath.length == 0) {
         await vscode_1.window.showErrorMessage("Parseg Demo cannot be started", { modal: true, detail: "Specify grammar file in VSCode setting" });
         return;
     }
     if (session) {
-        if (grammarPath === session.grammarPath && startSymbol === session.startSymbol && session.client.state === node_1.State.Running) {
+        if (grammarPath === session.grammarPath && startSymbol === session.startSymbol && session.client.state === node_1.State.Running && session.options === options) {
             await session.client.restart();
             return;
+        }
+        else {
+            session.client.stop();
         }
     }
     const serverOptions = {
@@ -26,6 +38,7 @@ async function start() {
         args: [
             "exec",
             "parseg-lsp",
+            ...options,
             grammarPath,
             startSymbol
         ],
@@ -38,7 +51,7 @@ async function start() {
     };
     const client = new node_1.LanguageClient('parsegDemoLSP', 'Parseg demo LSP', serverOptions, clientOptions);
     client.start();
-    session = { grammarPath, client, startSymbol };
+    session = { grammarPath, client, startSymbol, options };
 }
 async function activate(context) {
     let disposable = vscode_1.commands.registerCommand('parseg-lsp-demo.startDemo', async () => {

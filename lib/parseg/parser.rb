@@ -3,7 +3,7 @@ require "securerandom"
 module Parseg
   class Parser
     attr_reader :grammar, :tokenizer, :token_locator
-    attr_accessor :error_tolerant_enabled
+    attr_accessor :error_tolerant_enabled, :skip_unknown_tokens_enabled
 
     def initialize(grammar:, tokenizer:)
       @grammar = grammar

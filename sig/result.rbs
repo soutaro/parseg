@@ -7,5 +7,8 @@ module Parseg
     attr_reader skip_tokens: Array[Integer]
 
     def initialize: (tree: Tree::t, token_locator: TokenLocator, skip_tokens: Array[Integer]) -> void
+
+    def each_error_tree: (?Tree::t) { (Tree::MissingTree) -> void } -> void
+                       | () -> Enumerator[Tree::MissingTree, void]
   end
 end

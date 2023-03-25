@@ -26,6 +26,30 @@ module Parseg
           enum_for :each
         end
       end
+
+      def error_tree?
+        ets = error_trees([])
+        unless ets.empty?
+          ets
+        end
+      end
+
+      def immediate_error_tree?
+        if errors = error_tree?
+          immediate_errors = errors.filter {|tree| tree.is_a?(MissingTree) } #: Array[MissingTree]
+          unless immediate_errors.empty?
+            immediate_errors
+          end
+        end
+      end
+
+      def error_trees(errors)
+        if next_tree
+          next_tree.error_trees(errors)
+        else
+          errors
+        end
+      end
     end
 
     class TokenTree < Base
@@ -56,6 +80,14 @@ module Parseg
           value.first_range(locator)
         end
       end
+
+      def error_trees(errors)
+        if value && value.error_tree?
+          errors << value
+        end
+
+        super(errors)
+      end
     end
 
     class EmptyTree < Base
@@ -80,6 +112,14 @@ module Parseg
 
       def first_range(locator)
         value.first_range(locator)
+      end
+
+      def error_trees(errors)
+        if value && value.error_tree?
+          errors << value
+        end
+
+        super(errors)
       end
     end
 
@@ -120,6 +160,14 @@ module Parseg
         first = values.first or raise
         first.first_range(locator)
       end
+
+      def error_trees(errors)
+        if values.any? {|t| t.error_tree? }
+          errors << self
+        end
+
+        super(errors)
+      end
     end
 
     class OptionalTree < Base
@@ -136,6 +184,14 @@ module Parseg
           value.first_range(locator)
         end
       end
+
+      def error_trees(errors)
+        if value && value.error_tree?
+          errors << self
+        end
+
+        super(errors)
+      end
     end
 
     class MissingTree < Base
@@ -151,6 +207,11 @@ module Parseg
         if token
           locator.token_range(token)
         end
+      end
+
+      def error_trees(errors)
+        errors << self
+        super(errors)
       end
     end
   end

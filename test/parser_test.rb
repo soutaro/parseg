@@ -46,6 +46,8 @@ class ParserTest < Minitest::Test
   def test_parse_success1
     result = parse("123 (456)")
 
+    assert_nil result.tree.error_tree?
+
     assert_tree(
       result.tree,
       {
@@ -99,6 +101,8 @@ class ParserTest < Minitest::Test
   def test_parse_success2
     result = parse("1 + 2 * 3 - 4")
 
+    assert_nil result.tree.error_tree?
+
     assert_tree(
       result.tree,
       {
@@ -136,80 +140,10 @@ class ParserTest < Minitest::Test
     )
   end
 
-  def test_parse_error_no_recovery
-    result = parse("(") {|p| p.error_tolerant_enabled = false }
-
-    assert_tree(
-      result.tree,
-      {
-        unexpected: nil
-      },
-      locator: result.token_locator
-    )
-  end
-
-  def test_missing_1
-    result = parse("(123 +)", :term)
-
-    assert_tree(
-      result.tree,
-      {
-        term: [
-          [:LPAREN, "("],
-          {
-            expr: [
-              {
-                term1: [
-                  {
-                    term: [
-                      [:INTEGER, "123"]
-                    ]
-                  }
-                ]
-              },
-              [:PLUS, "+"],
-              { unexpected: :RPAREN }
-            ]
-          },
-          [:RPAREN, ")"]
-        ]
-      },
-      locator: result.token_locator
-    )
-  end
-
-  def test_missing_2
-    result = parse("123 + +", :exprs)
-
-    assert_tree(
-      result.tree,
-      {
-        exprs: [
-          {
-            expr: [
-              {
-                term1: [
-                  {
-                    term: [
-                      [:INTEGER, "123"]
-                    ]
-                  }
-                ]
-              },
-              [:PLUS, "+"],
-              { unexpected: :PLUS },
-              [:PLUS, "+"],
-              { unexpected: nil }
-            ]
-          }
-        ]
-      },
-      locator: result.token_locator
-    )
-  end
-
-  def test_missing_3
+  def test_parse_success3
     result = parse("1+2 3", :exprs)
+
+    assert_nil result.tree.error_tree?
 
     assert_tree(
       result.tree,
@@ -257,8 +191,96 @@ class ParserTest < Minitest::Test
     )
   end
 
-  def test_missing_4
+  def test_parse_error_no_recovery
+    result = parse("(") {|p| p.error_tolerant_enabled = false }
+
+    assert_equal [result.tree], result.tree.error_tree?
+    assert_instance_of Array, result.tree.immediate_error_tree?
+
+    assert_tree(
+      result.tree,
+      {
+        unexpected: nil
+      },
+      locator: result.token_locator
+    )
+  end
+
+  def test_missing_1
+    result = parse("(123 +)", :term)
+
+    assert_instance_of Array, result.tree.error_tree?
+    assert_equal 1, result.tree.error_tree?.size
+    assert_nil result.tree.immediate_error_tree?
+
+
+    assert_tree(
+      result.tree,
+      {
+        term: [
+          [:LPAREN, "("],
+          {
+            expr: [
+              {
+                term1: [
+                  {
+                    term: [
+                      [:INTEGER, "123"]
+                    ]
+                  }
+                ]
+              },
+              [:PLUS, "+"],
+              { unexpected: :RPAREN }
+            ]
+          },
+          [:RPAREN, ")"]
+        ]
+      },
+      locator: result.token_locator
+    )
+  end
+
+  def test_missing_2
+    result = parse("123 + +", :exprs)
+
+    assert_instance_of Array, result.tree.error_tree?
+    assert_equal 1, result.tree.error_tree?.size
+    assert_nil result.tree.immediate_error_tree?
+
+    assert_tree(
+      result.tree,
+      {
+        exprs: [
+          {
+            expr: [
+              {
+                term1: [
+                  {
+                    term: [
+                      [:INTEGER, "123"]
+                    ]
+                  }
+                ]
+              },
+              [:PLUS, "+"],
+              { unexpected: :PLUS },
+              [:PLUS, "+"],
+              { unexpected: nil }
+            ]
+          }
+        ]
+      },
+      locator: result.token_locator
+    )
+  end
+
+  def test_missing_3
     result = parse("(1 a)", :exprs)
+
+    assert_instance_of Array, result.tree.error_tree?
+    assert_equal 1, result.tree.error_tree?.size
+    assert_nil result.tree.immediate_error_tree?
 
     assert_tree(
       result.tree,

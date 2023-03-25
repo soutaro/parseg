@@ -33,6 +33,18 @@
             "markdownDescription": "The start symbol of the grammar",
             "type": "string",
             "default": "start"
+          },
+          "parseg-lsp.error_tolerant": {
+            "title": "Error tolerant",
+            "markdownDescription": "Enable error tolerant parsing",
+            "type": "boolean",
+            "default": true
+          },
+          "parseg-lsp.skip_tokens": {
+            "title": "Skip tokens",
+            "markdownDescription": "Enable skip tokens",
+            "type": "boolean",
+            "default": true
           }
         }
       }

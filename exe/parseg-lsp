@@ -6,10 +6,23 @@ require "uri"
 require "pp"
 require "rbs"
 require "strscan"
+require "optparse"
 
 def empty_binding
   binding
 end
+
+error_tolerant_enabled = true
+skip_tokens_enabled = true
+
+OptionParser.new do |opts|
+  opts.on("--no-error-tolerant") do
+    error_tolerant_enabled = false
+  end
+  opts.on("--no-skip-tokens") do
+    skip_tokens_enabled = false
+  end
+end.parse!(ARGV)
 
 # @type const LSP: untyped
 
@@ -79,7 +92,10 @@ reader.read do |request|
       end
     end
 
-    result = Parseg::Parser.new(grammar: grammar, tokenizer: tokenizer[content]).parse(grammar.non_terminals[rule])
+    parser = Parseg::Parser.new(grammar: grammar, tokenizer: tokenizer[content])
+    parser.error_tolerant_enabled = error_tolerant_enabled
+    parser.skip_unknown_tokens_enabled = skip_tokens_enabled
+    result = parser.parse(grammar.non_terminals[rule])
     trees[uri] = [result, content, nil]
 
   when :"textDocument/didOpen"
@@ -88,7 +104,11 @@ reader.read do |request|
 
     start = grammar.non_terminals[rule]
     tok = tokenizer[text]
-    result = Parseg::Parser.new(grammar: grammar, tokenizer: tokenizer[text]).parse(start)
+
+    parser = Parseg::Parser.new(grammar: grammar, tokenizer: tokenizer[text])
+    parser.error_tolerant_enabled = error_tolerant_enabled
+    parser.skip_unknown_tokens_enabled = skip_tokens_enabled
+    result = parser.parse(start)
 
     trees[uri] = [
       result,
@@ -108,16 +128,16 @@ reader.read do |request|
     formatter = Parseg::LspTreeFormatter.new(result.token_locator, buffer)
     response = formatter.format_tree(result.tree, last_position: { line: 0, character: 0 })
 
-    diagnostics = result.skip_tokens.map do |token_id|
+    diagnostics = [] #: Array[LanguageServer::Protocol::Interface::Diagnostic]
+
+    result.skip_tokens.each do |token_id|
       _, type, offset, value = result.token_locator.token(token_id)
 
       range = result.token_locator.token_range(token_id)
       start_line, start_column = buffer.pos_to_loc(range.begin)
       end_line, end_column = buffer.pos_to_loc(range.end)
 
-      STDERR.puts "type=#{type}, offset=#{offset}, value=#{value}, range=#{range}"
-
-      LanguageServer::Protocol::Interface::Diagnostic.new(
+      diagnostics << LanguageServer::Protocol::Interface::Diagnostic.new(
         range: {
           start: { line: start_line - 1, character: start_column },
           end: { line: end_line - 1, character: end_column }
@@ -125,6 +145,27 @@ reader.read do |request|
         severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::INFORMATION,
         message: "Token skipped: #{type}, #{value}"
       )
+    end
+
+    result.each_error_tree() do |error|
+      if error.token
+        _, type, offset, value = result.token_locator.token(error.token)
+
+        range = result.token_locator.token_range(error.token)
+        start_line, start_column = buffer.pos_to_loc(range.begin)
+        end_line, end_column = buffer.pos_to_loc(range.end)
+
+        diagnostic = LanguageServer::Protocol::Interface::Diagnostic.new(
+          range: {
+            start: { line: start_line - 1, character: start_column },
+            end: { line: end_line - 1, character: end_column }
+          },
+          severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::INFORMATION,
+          message: "Unexpected token: #{type}, #{value}, expected tokens: #{error.expression.first_tokens}"
+        )
+
+        diagnostics << diagnostic
+      end
     end
 
     STDERR.puts "Sending publishDiagnostics notification with #{diagnostics.size} diagnostics"

@@ -17,12 +17,24 @@ import {
 let session: {
 	client: LanguageClient,
 	grammarPath: string,
-	startSymbol: string
+	startSymbol: string,
+	options: string[]
 } | undefined
 
 async function start() {
 	const grammarPath = workspace.getConfiguration('parseg-lsp').get("grammar") as (string | undefined)
 	const startSymbol = workspace.getConfiguration('parseg-lsp').get('start') as string
+	const errorTolerant = workspace.getConfiguration('parseg-lsp').get("error_tolerant") as boolean
+	const skipTokens = workspace.getConfiguration('parseg-lsp').get("skip_tokens") as boolean
+
+	const options = [] as string[]
+
+	if (!errorTolerant) {
+		options.push("--no-error-tolerant")
+	}
+	if (!skipTokens) {
+		options.push("--no-skip-tokens")
+	}
 
 	if (!grammarPath || grammarPath.length == 0) {
 		await window.showErrorMessage("Parseg Demo cannot be started", { modal: true, detail: "Specify grammar file in VSCode setting" })
@@ -30,9 +42,11 @@ async function start() {
 	}
 
 	if (session) {
-		if (grammarPath === session.grammarPath && startSymbol === session.startSymbol && session.client.state === State.Running) {
+		if (grammarPath === session.grammarPath && startSymbol === session.startSymbol && session.client.state === State.Running && session.options === options) {
 			await session.client.restart()
 			return
+		} else {
+			session.client.stop()
 		}
 	}
 
@@ -41,6 +55,7 @@ async function start() {
 		args: [
 			"exec",
 			"parseg-lsp",
+			...options,
 			grammarPath,
 			startSymbol
 		],
@@ -62,7 +77,7 @@ async function start() {
 
 	client.start();
 
-	session = { grammarPath, client, startSymbol }
+	session = { grammarPath, client, startSymbol, options }
 }
 
 export async function activate(context: ExtensionContext) {
