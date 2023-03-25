@@ -18,7 +18,7 @@ module Parseg
 
       def each(&block)
         if block
-          yield _ = self
+          yield(_ = self)
           if next_tree
             next_tree.each(&block)
           end

@@ -16,7 +16,14 @@ module Parseg
 
     @current_token: token?
 
+    @skip_unknown_tokens: bool
+
     def initialize: (grammar: Grammar, tokenizer: _Tokenizer) -> void
+
+    def skip_unknown_tokens?: () -> bool
+
+    # Enable *token skip* feature
+    def skip_unknown_tokens!: (?bool enable) -> self
 
     # Update `#current_token` by reading a token from `#tokenizer`
     #

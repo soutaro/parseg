@@ -6,6 +6,7 @@ require "yaml"
 require "active_support"
 require "active_support/tagged_logging"
 require "language_server-protocol"
+require "strscan"
 
 module Parseg
   def self.logger
@@ -17,6 +18,7 @@ module Parseg
   end
 end
 
+require "parseg/strscan_tokenizer"
 require "parseg/grammar"
 require "parseg/token_locator"
 require "parseg/result"

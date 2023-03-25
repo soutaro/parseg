@@ -76,19 +76,12 @@ module Parseg
       class Repeat
         include FirstTokensUtil
 
-        type presence = :required | :optional | false
-
         attr_reader content: t
         attr_reader separator: t
 
-        attr_reader leading: presence
-        attr_reader trailing: presence
-
         attr_reader next_expr: t?
 
-        def initialize: (content: t, separator: t, leading: presence, trailing: presence, ?next_expr: t?) -> void
-
-        def with: (?separator: t, ?leading: presence, ?trailing: presence) -> Repeat
+        def initialize: (content: t, separator: t, ?next_expr: t?) -> void
 
         def my_first_tokens: () -> Set[Symbol | nil]
 
@@ -111,7 +104,7 @@ module Parseg
     end
 
     class NonTerminal
-      attr_accessor rule: Expression::t
+      attr_accessor rule: Expression::NonTerminalSymbol
 
       attr_reader name: Symbol
 
@@ -129,7 +122,7 @@ module Parseg
 
       def Opt: (Expression::t) -> Expression::Optional
 
-      def Repeat: (Expression::t) -> Expression::Repeat
+      def Repeat: (Expression::t, ?Expression::t) -> Expression::Repeat
 
       def Alt: (*Expression::t) -> Expression::Alternation
 

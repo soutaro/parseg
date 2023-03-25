@@ -15,8 +15,8 @@ module Parseg
         Expression::Optional.new(expr)
       end
 
-      def Repeat(expr)
-        Expression::Repeat.new(content: expr, separator: Expression::Empty.instance, leading: false, trailing: false)
+      def Repeat(expr, separator = Expression::Empty.instance)
+        Expression::Repeat.new(content: expr, separator: separator)
       end
 
       def Alt(*exprs)
@@ -176,38 +176,22 @@ module Parseg
       class Repeat
         include FirstTokensUtil
 
-        attr_reader :content, :separator, :leading, :trailing, :next_expr
+        attr_reader :content, :separator, :next_expr
 
-        def initialize(content:, separator:, leading:, trailing:, next_expr: nil)
+        def initialize(content:, separator:, next_expr: nil)
           @content = content
           @separator = separator
-          @leading = leading
-          @trailing = trailing
           @next_expr = next_expr
         end
 
         def my_first_tokens
           tokens = Set[]
 
-          case leading
-          when :required
-            tokens.merge(separator.first_tokens)
-            if tokens.include?(nil)
-              tokens.delete(nil)
-            else
-              return tokens
-            end
-          when :optional
-            tokens.merge(separator.first_tokens)
-          end
-
           tokens.merge(content.first_tokens)
 
           if tokens.include?(nil)
             tokens.delete(nil)
-            if trailing != false
-              tokens.merge(separator.first_tokens)
-            end
+            tokens.merge(separator.first_tokens)
           end
 
           tokens
@@ -215,20 +199,10 @@ module Parseg
 
         def +(expr)
           if next_expr
-            Repeat.new(content: content, separator: separator, leading: leading, trailing: trailing, next_expr: next_expr + expr)
+            Repeat.new(content: content, separator: separator, next_expr: next_expr + expr)
           else
-            Repeat.new(content: content, separator: separator, leading: leading, trailing: trailing, next_expr: expr)
+            Repeat.new(content: content, separator: separator, next_expr: expr)
           end
-        end
-
-        def with(separator: self.separator, leading: self.leading, trailing: self.trailing)
-          Repeat.new(
-            content: content,
-            separator: separator,
-            leading: leading,
-            trailing: trailing,
-            next_expr: next_expr
-          )
         end
       end
 

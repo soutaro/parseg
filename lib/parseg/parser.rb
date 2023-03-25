@@ -7,6 +7,16 @@ module Parseg
       @tokenizer = tokenizer
       @token_locator = TokenLocator.new()
       @token_id = 0
+      @skip_unknown_tokens = true
+    end
+
+    def skip_unknown_tokens?
+      @skip_unknown_tokens
+    end
+
+    def skip_unknown_tokens!(enabled = true)
+      @skip_unknown_tokens = enabled
+      self
     end
 
     def advance_token
@@ -52,7 +62,13 @@ module Parseg
       skips = [] #: Array[Integer]
       tree = parse_rule(non_terminal.rule, Set[], skips)
 
-      Result.new(tree: tree, token_locator: token_locator, skip_tokens: skips)
+      expr = Grammar::Expression::NonTerminalSymbol.new(non_terminal)
+
+      Result.new(
+        tree: Tree::NonTerminalTree.new(expr, tree, next_tree: nil),
+        token_locator: token_locator,
+        skip_tokens: skips
+      )
     end
 
     def with_next_tokens(next_tokens, next_expr)
@@ -65,6 +81,8 @@ module Parseg
     end
 
     def skip_unknown_tokens(next_tokens, next_expr, skip_tokens)
+      return current_token
+
       Parseg.logger.tagged("#skip_unknown_tokens") do
         Parseg.logger.info(">> skipping tokens other than: #{next_tokens.inspect}")
 
@@ -93,7 +111,8 @@ module Parseg
         end
 
       Parseg.logger.tagged("#parse_rule(#{summary})") do
-        skip_unknown_tokens(expr.first_tokens + next_tokens, nil, skip_tokens)
+        # skip_unknown_tokens(expr.first_tokens + next_tokens, nil, skip_tokens)
+        Parseg.logger.fatal { "*" }
 
         case expr
         when Grammar::Expression::TokenSymbol
@@ -173,7 +192,8 @@ module Parseg
           nid = token_id()
 
           expr.expressions.each do |opt|
-            if opt.first_tokens.include?(token_type)
+            option_first_tokens = opt.first_tokens
+            if option_first_tokens.include?(token_type) || option_first_tokens.include?(nil)
               value = with_next_tokens(next_tokens, expr.next_expr) do |next_tokens|
                 parse_rule(opt, next_tokens, skip_tokens)
               end
@@ -201,47 +221,22 @@ module Parseg
             tokens_before_separator.merge(expr.content.first_tokens)
           end
 
-          case expr.leading
-          when :required
-            values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-          when :optional
-            if expr.separator.first_tokens.include?(token_type)
-              values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-            end
-          when false
-            # skip
-          end
-
-          while current_token
+          while true
+            last_token_id = token_id
             values << parse_rule(expr.content, tokens_before_separator, skip_tokens)
 
-            if expr.separator.first_tokens.include?(nil)
-              if expr.content.first_tokens.include?(token_type)
-                next
-              end
+            break unless current_token
+
+            separator_first_tokens = expr.separator.first_tokens
+            if separator_first_tokens.include?(token_type) || separator_first_tokens.include?(nil)
+              values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
+            else
+              break
             end
 
-            case expr.trailing
-            when :required
-              values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-
-              unless expr.content.first_tokens.include?(token_type)
-                break
-              end
-            when :optional
-              if expr.separator.first_tokens.include?(token_type)
-                values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-              end
-
-              unless expr.content.first_tokens.include?(token_type)
-                break
-              end
-            when false
-              if expr.separator.first_tokens.include?(token_type)
-                values << parse_rule(expr.separator, tokens_before_content, skip_tokens)
-              else
-                break
-              end
+            # Stop loop when one content-separator iteration doesn't consume any token
+            if last_token_id == token_id
+              break
             end
           end
 

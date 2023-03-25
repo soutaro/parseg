@@ -75,6 +75,10 @@ gems:
   version: '0'
   source:
     type: stdlib
+- name: strscan
+  version: '0'
+  source:
+    type: stdlib
 - name: time
   version: '0'
   source:

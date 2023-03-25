@@ -12,3 +12,4 @@ gems:
   - name: parseg
     ignore: true
   - name: activesupport
+  - name: strscan
