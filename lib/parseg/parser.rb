@@ -1,22 +1,17 @@
+require "securerandom"
+
 module Parseg
   class Parser
     attr_reader :grammar, :tokenizer, :token_locator
+    attr_accessor :error_tolerant_enabled
 
     def initialize(grammar:, tokenizer:)
       @grammar = grammar
       @tokenizer = tokenizer
       @token_locator = TokenLocator.new()
       @token_id = 0
-      @skip_unknown_tokens = true
-    end
-
-    def skip_unknown_tokens?
-      @skip_unknown_tokens
-    end
-
-    def skip_unknown_tokens!(enabled = true)
-      @skip_unknown_tokens = enabled
-      self
+      @skip_unknown_tokens_enabled = false
+      @error_tolerant_enabled = true
     end
 
     def advance_token
@@ -60,16 +55,26 @@ module Parseg
     def parse(non_terminal)
       advance_token
       skips = [] #: Array[Integer]
-      tree = parse_rule(non_terminal.rule, Set[], skips)
 
-      expr = Grammar::Expression::NonTerminalSymbol.new(non_terminal)
+      if error_tolerant_enabled
+        tree = parse_rule(non_terminal.rule, Set[], skips)
+
+        tree = Tree::NonTerminalTree.new(
+          Grammar::Expression::NonTerminalSymbol.new(non_terminal),
+          tree,
+          next_tree: nil
+        )
+      else
+        @exit_symbol = :"abort_on_parse_error(#{SecureRandom.base64(3)})"
+        tree = catch(@exit_symbol) { parse_rule(non_terminal.rule, Set[], skips) }
+      end
 
       Result.new(
-        tree: Tree::NonTerminalTree.new(expr, tree, next_tree: nil),
+        tree: tree,
         token_locator: token_locator,
         skip_tokens: skips
       )
-    end
+  end
 
     def with_next_tokens(next_tokens, next_expr)
       if next_expr
@@ -127,11 +132,15 @@ module Parseg
           else
             id = token_id
 
-            if expr.next_expr
-              next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-            end
+            if error_tolerant_enabled
+              if expr.next_expr
+                next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+              end
 
-            Tree::MissingTree.new(expr, id, next_tree: next_tree)
+              Tree::MissingTree.new(expr, id, next_tree: next_tree)
+            else
+              throw_error_tree(Tree::MissingTree.new(expr, id, next_tree: nil))
+            end
           end
 
         when Grammar::Expression::NonTerminalSymbol
@@ -159,11 +168,15 @@ module Parseg
             else
               nid = token_id
 
-              if expr.next_expr
-                next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-              end
+              if error_tolerant_enabled
+                if expr.next_expr
+                  next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+                end
 
-              Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+                Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+              else
+                throw_error_tree Tree::MissingTree.new(expr, nid, next_tree: nil)
+              end
             end
           end
 
@@ -206,11 +219,15 @@ module Parseg
             end
           end
 
-          if expr.next_expr
-            next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
-          end
+          if error_tolerant_enabled
+            if expr.next_expr
+              next_tree = parse_rule(expr.next_expr, next_tokens, skip_tokens)
+            end
 
-          Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+            Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+          else
+            throw_error_tree Tree::MissingTree.new(expr, nid, next_tree: nil)
+          end
 
         when Grammar::Expression::Repeat
           values = [] #: Array[Tree::t]
@@ -247,6 +264,12 @@ module Parseg
           Tree::RepeatTree.new(expr, values, next_tree: next_tree)
         end
       end
+    end
+
+    def throw_error_tree(tree)
+      sym = @exit_symbol
+      raise unless sym
+      throw sym, tree
     end
   end
 end

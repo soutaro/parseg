@@ -13,3 +13,4 @@ gems:
     ignore: true
   - name: activesupport
   - name: strscan
+  - name: securerandom

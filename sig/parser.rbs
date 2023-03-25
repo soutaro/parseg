@@ -12,18 +12,23 @@ module Parseg
 
     attr_reader token_locator: TokenLocator
 
+    # `true` to enable *skip unknown tokens* feature
+    attr_accessor skip_unknown_tokens_enabled: bool
+
+    # `true` to enable *error tolerant* mode
+    attr_accessor error_tolerant_enabled: bool
+
     @token_id: Integer
 
     @current_token: token?
 
-    @skip_unknown_tokens: bool
-
     def initialize: (grammar: Grammar, tokenizer: _Tokenizer) -> void
 
-    def skip_unknown_tokens?: () -> bool
+    def parse: (Grammar::NonTerminal) -> Result
 
-    # Enable *token skip* feature
-    def skip_unknown_tokens!: (?bool enable) -> self
+    private
+
+    @exit_symbol: Symbol?
 
     # Update `#current_token` by reading a token from `#tokenizer`
     #
@@ -59,12 +64,12 @@ module Parseg
     # Returns the `#type` of the `#current_token`
     %a{pure} def token_type: () -> Symbol?
 
-    def parse: (Grammar::NonTerminal) -> Result
-
     def parse_rule: (Grammar::Expression::t, Set[Symbol?] next_tokens, Array[Integer] skip_tokens) -> Tree::t
 
     def skip_unknown_tokens: (Set[Symbol?] next_tokens, Grammar::Expression::t? next_expr, Array[Integer] skip_tokens) -> token?
 
     def with_next_tokens: [T] (Set[Symbol?], Grammar::Expression::t?) { (Set[Symbol?]) -> T } -> T
+
+    def throw_error_tree: (Tree::MissingTree) -> bot
   end
 end

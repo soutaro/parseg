@@ -38,6 +38,8 @@ class ParserTest < Minitest::Test
       tokenizer: Tokenizer.tokenizer(string)
     )
 
+    yield parser if block_given?
+
     parser.parse(Grammar.non_terminals[start])
   end
 
@@ -129,6 +131,18 @@ class ParserTest < Minitest::Test
             ]
           },
         ]
+      },
+      locator: result.token_locator
+    )
+  end
+
+  def test_parse_error_no_recovery
+    result = parse("(") {|p| p.error_tolerant_enabled = false }
+
+    assert_tree(
+      result.tree,
+      {
+        unexpected: nil
       },
       locator: result.token_locator
     )

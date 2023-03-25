@@ -80,10 +80,10 @@ grammar = Grammar.new() do |grammar|
     T(:tLPAREN) + NT(:type) + T(:tRPAREN),
     NT(:base_type),
     NT(:type_name) + Opt(
-      T(:kLBRACKET) + Repeat(NT(:type)).with(separator: T(:kCOMMA)) + T(:kRBRACKET)
+      T(:kLBRACKET) + Repeat(NT(:type), T(:kCOMMA)) + T(:kRBRACKET)
     ),
     T(:kSINGLETON) + T(:kLPAREN) + NT(:type_name) + T(:kRPAREN),
-    T(:kLBRACKET) + Opt(Repeat(NT(:type)).with(separator: T(:kCOMMA))) + T(:kRBRACKET)
+    T(:kLBRACKET) + Opt(Repeat(NT(:type), T(:kCOMMA))) + T(:kRBRACKET)
   )
 
   grammar[:type_name].rule =
@@ -96,10 +96,10 @@ grammar = Grammar.new() do |grammar|
   grammar[:optional_type].rule = NT(:simple_type) + Opt(T(:kQUESTION))
 
   grammar[:intersection_type].rule =
-    Repeat(NT(:optional_type)).with(separator: T(:kAMD), trailing: false, leading: false)
+    Repeat(NT(:optional_type), T(:kAMD))
 
   grammar[:union_type].rule =
-    Repeat(NT(:intersection_type)).with(separator: T(:kBAR), trailing: false, leading: false)
+    Repeat(NT(:intersection_type), T(:kBAR))
 
   grammar[:type].rule = NT(:union_type)
 
@@ -108,7 +108,7 @@ grammar = Grammar.new() do |grammar|
   grammar[:method_type].rule = Opt(NT(:type_params)) + NT(:params) + Opt(NT(:block)) + T(:kARROW) + NT(:return_type)
 
   grammar[:type_params].rule =
-    T(:kLBRACKET) + Repeat(NT(:type_param)).with(separator: T(:kCOMMA)) + T(:kRBRACKET)
+    T(:kLBRACKET) + Repeat(NT(:type_param), T(:kCOMMA)) + T(:kRBRACKET)
 
   grammar[:type_param].rule =
     T(:tUIDENT) + Opt(T(:kLT) + NT(:upper_bound))
@@ -180,11 +180,11 @@ grammar = Grammar.new() do |grammar|
     Opt(T(:kCOLON) + NT(:module_self_decl)) + NT(:module_members) + T(:kEND)
 
   grammar[:module_self_decl].rule =
-    Repeat(NT(:module_self_constraint)).with(separator: T(:kCOMMA))
+    Repeat(NT(:module_self_constraint), T(:kCOMMA))
 
   grammar[:module_self_constraint].rule =
     type_names[module_name: true, interface_name: true, alias_name: false] + Opt(
-      T(:kLBRACKET) + Repeat(NT(:type)).with(separator: T(:kCOMMA)) + T(:kRBRACKET)
+      T(:kLBRACKET) + Repeat(NT(:type), T(:kCOMMA)) + T(:kRBRACKET)
     )
 
   grammar[:module_members].rule = Opt(
