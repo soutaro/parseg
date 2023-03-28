@@ -4,7 +4,10 @@ module Parseg
       attr_reader :next_tree, :expression
 
       def range(locator)
-        fr = first_range(locator)
+        unless self.is_a?(MissingTree)
+          fr = first_range(locator)
+        end
+
         if next_tree
           nr = next_tree.range(locator)
         end

@@ -32,5 +32,30 @@ module Parseg
         enum_for :each_error_tree
       end
     end
+
+    def each_tree(tree = self.tree, &block)
+      if block
+        yield tree
+
+        case tree
+        when Tree::NonTerminalTree
+          each_tree(tree.value, &block) if tree.value
+        when Tree::RepeatTree
+          tree.values.each do |tree|
+            each_tree(tree, &block)
+          end
+        when Tree::OptionalTree
+          each_tree(tree.value, &block) if tree.value
+        when Tree::AlternationTree
+          each_tree(tree.value, &block) if tree.value
+        end
+
+        if tree.next_tree
+          each_tree(tree.next_tree, &block)
+        end
+      else
+        enum_for :each_tree
+      end
+    end
   end
 end

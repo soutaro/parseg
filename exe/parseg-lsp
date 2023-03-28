@@ -147,6 +147,28 @@ reader.read do |request|
       )
     end
 
+    # result.each_error_tree() do |tree|  end
+    #   range = tree.range(result.token_locator) or next
+
+    #   start_line, start_column = buffer.pos_to_loc(range.begin)
+    #   end_line, end_column = buffer.pos_to_loc(range.end)
+
+    #   toks = missings.each.with_object(Set[]) do |missing, set|
+    #     set.merge(missing.expression.first_tokens)
+    #   end
+
+    #   diagnostic = LanguageServer::Protocol::Interface::Diagnostic.new(
+    #     range: {
+    #       start: { line: start_line - 1, character: start_column },
+    #       end: { line: end_line - 1, character: end_column }
+    #     },
+    #     severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::WARNING,
+    #     message: "Unexpected token: #{toks} are expected"
+    #   )
+
+    #   diagnostics << diagnostic
+    # end
+
     result.each_error_tree() do |error|
       if error.token
         _, type, offset, value = result.token_locator.token(error.token)
@@ -160,7 +182,7 @@ reader.read do |request|
             start: { line: start_line - 1, character: start_column },
             end: { line: end_line - 1, character: end_column }
           },
-          severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::INFORMATION,
+          severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::WARNING,
           message: "Unexpected token: #{type}, #{value}, expected tokens: #{error.expression.first_tokens}"
         )
 

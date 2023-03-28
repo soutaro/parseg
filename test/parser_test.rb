@@ -276,7 +276,7 @@ class ParserTest < Minitest::Test
   end
 
   def test_missing_3
-    result = parse("(1 a)", :exprs)
+    result = parse("(1 3)", :exprs)
 
     assert_instance_of Array, result.tree.error_tree?
     assert_equal 1, result.tree.error_tree?.size
@@ -307,7 +307,7 @@ class ParserTest < Minitest::Test
                         ]
                       },
                       {
-                        unexpected: :IDENT
+                        unexpected: :INTEGER
                       }
                     ]
                   },
@@ -315,7 +315,17 @@ class ParserTest < Minitest::Test
               }
             ]
           },
-          { unexpected: :IDENT }
+          {
+            expr: [
+              {
+                term1: [
+                  {
+                    term: [ [:INTEGER, "3"] ]
+                  }
+                ]
+              }
+            ]
+          }
         ]
       },
       locator: result.token_locator

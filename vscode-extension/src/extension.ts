@@ -94,3 +94,8 @@ export function deactivate(): Thenable<void> | undefined {
 		return
 	}
 }
+
+
+function foo() {
+	const foo = 123;
+}

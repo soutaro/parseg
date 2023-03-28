@@ -1,3 +1,32 @@
+use RBS::*, RBS::Pathname
+
+$ENV : Integer
+
 module A
-  module B = Kernel
+  # module C[unchecked in A, B]
+
+    # def foo: ...
+
+    # def bar: () -> void
+    #        | () -> Integer
+
+    # alias foo bar
+
+    # alias self.foo self.bar
+
+    # alias foo self.bar
+
+    # alias self.bar foo
+
+    # def foo: () -> type
+
+    # alias foo bar
+
+    def bar(x: untyped) : String
+
+    # type t = foo
+
+    type t[A] = [A, Integer]
+  # end
 end
+

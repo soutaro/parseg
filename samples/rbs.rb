@@ -51,6 +51,16 @@ tokenizer = define_tokenizer(
   kSINGLETON: /singleton/,
   kBOOL: /bool/,
   kDEF: /def/,
+  kUNCHECKED: /unchecked/,
+  kIN: /in/,
+  kOUT: /out/,
+  kALIAS: /alias/,
+  kTYPE: /type/,
+  kUSE: /use/,
+  kAS: /as/,
+  kATTRREADER: /attr_reader/,
+  kATTRACCESSOR: /attr_accessor/,
+  kATTRWRITER: /attr_writer/,
   kBAR: /\|/,
   kAND: /\&/,
   kLT: /\</,
@@ -72,12 +82,13 @@ tokenizer = define_tokenizer(
   tUIDENT: /[A-Z]\w*/,
   tLIDENT: /[a-z]\w*/,
   tULIDENT: /_[A-Z]\w*/,
-  tATIDENT: /@[a-zA-Z]\w*/
+  tATIDENT: /@[a-zA-Z]\w*/,
+  tGIDENT: /\$[a-zA-Z]\w*/
 )
 
 grammar = Grammar.new() do |grammar|
   grammar[:simple_type].rule = Alt(
-    T(:tLPAREN) + NT(:type) + T(:tRPAREN),
+    T(:kLPAREN) + NT(:type) + T(:kRPAREN),
     NT(:base_type),
     NT(:type_name) + Opt(
       T(:kLBRACKET) + Repeat(NT(:type), T(:kCOMMA)) + T(:kRBRACKET)
@@ -90,7 +101,7 @@ grammar = Grammar.new() do |grammar|
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + Alt(T(:tUIDENT), T(:tLIDENT), T(:tULIDENT))
 
   grammar[:base_type].rule = Alt(
-    T(:kVOID), T(:kUNTYPED), T(:kNIL), T(:kSELF), T(:kSELF), T(:kBOOL)
+    T(:kVOID), T(:kUNTYPED), T(:kNIL), T(:kSELF), T(:kBOOL)
   )
 
   grammar[:optional_type].rule = NT(:simple_type) + Opt(T(:kQUESTION))
@@ -111,7 +122,7 @@ grammar = Grammar.new() do |grammar|
     T(:kLBRACKET) + Repeat(NT(:type_param), T(:kCOMMA)) + T(:kRBRACKET)
 
   grammar[:type_param].rule =
-    T(:tUIDENT) + Opt(T(:kLT) + NT(:upper_bound))
+    Opt(T(:kUNCHECKED)) + Opt(Alt(T(:kIN), T(:kOUT))) + T(:tUIDENT) + Opt(T(:kLT) + NT(:upper_bound))
 
   grammar[:upper_bound].rule =
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + Alt(T(:tUIDENT), T(:tULIDENT))
@@ -157,7 +168,7 @@ grammar = Grammar.new() do |grammar|
   grammar[:module_name].rule =
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + T(:tUIDENT)
 
-  type_names = -> (module_name:, interface_name:, alias_name:) {
+  type_names = -> (module_name: true, interface_name: true, alias_name: true) {
     list = []
 
     list << T(:tUIDENT) if module_name
@@ -183,21 +194,9 @@ grammar = Grammar.new() do |grammar|
     Repeat(NT(:module_self_constraint), T(:kCOMMA))
 
   grammar[:module_self_constraint].rule =
-    type_names[module_name: true, interface_name: true, alias_name: false] + Opt(
+    type_names[alias_name: false] + Opt(
       T(:kLBRACKET) + Repeat(NT(:type), T(:kCOMMA)) + T(:kRBRACKET)
     )
-
-  grammar[:module_members].rule = Opt(
-    Repeat(
-      Alt(
-        NT(:module_decl),
-        NT(:constant_decl),
-        NT(:ivar_member),
-        NT(:self_ivar_member),
-        NT(:method_definition),
-      )
-    )
-  )
 
   grammar[:ivar_member].rule = T(:tATIDENT) + T(:kCOLON) + NT(:simple_type)
 
@@ -219,14 +218,58 @@ grammar = Grammar.new() do |grammar|
   grammar[:method_name].rule = T(:tLIDENT)
 
   grammar[:method_types].rule =
-    NT(:method_type) + Opt(
-      T(:kBAR) + Alt(
-        T(:kDOT3),
-        NT(:method_types)
-      )
+    Alt(
+      T(:kDOT3),
+      NT(:method_type) + Opt(T(:kBAR) + NT(:method_types))
     )
 
-  grammar[:start].rule = Repeat(NT(:module_decl))
+  grammar[:alias_decl].rule =
+    T(:kALIAS) + Alt(
+      T(:kSELF) + T(:kDOT) + NT(:method_name) + T(:kSELF) + T(:kDOT) + NT(:method_name),
+      NT(:method_name) + NT(:method_name)
+    )
+
+  grammar[:type_alias_decl].rule =
+    T(:kTYPE) + type_names[module_name: false, interface_name: false] + Opt(NT(:type_params)) + T(:kEQ) + NT(:simple_type)
+
+  grammar[:global_decl].rule =
+    T(:tGIDENT) + T(:kCOLON) + NT(:simple_type)
+
+  grammar[:module_members].rule = Opt(
+    Repeat(
+      Alt(
+        NT(:module_decl),
+        NT(:constant_decl),
+        NT(:ivar_member),
+        NT(:self_ivar_member),
+        NT(:method_definition),
+        NT(:alias_decl),
+        NT(:type_alias_decl),
+      )
+    )
+  )
+
+  grammar[:use_wildcard_clause].rule = T(:kSTAR)
+  grammar[:use_single_clause].rule =
+    Alt(
+      T(:tUIDENT) + Opt(T(:kAS) + T(:tUIDENT)),
+      T(:tLIDENT) + Opt(T(:kAS) + T(:tLIDENT)),
+      T(:tULIDENT)) + Opt(T(:kAS) + T(:tULIDENT)
+    )
+  grammar[:use_clause].rule = Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + Alt(NT(:use_wildcard_clause), NT(:use_single_clause))
+
+  grammar[:use_directive].rule = T(:kUSE) + Repeat(NT(:use_clause), T(:kCOMMA))
+
+  grammar[:start].rule =
+    Opt(Repeat(NT(:use_directive))) +
+      Repeat(
+        Alt(
+          NT(:module_decl),
+          NT(:global_decl),
+          NT(:type_alias_decl),
+          NT(:constant_decl)
+        )
+      )
 end
 
 [tokenizer, grammar]
