@@ -1,6 +1,6 @@
-use RBS::*, RBS::Pathname
+# use RBS::*, RBS::Pathname
 
-$ENV : Integer
+# $ENV : Integer
 
 module A
   # module C[unchecked in A, B]
@@ -22,11 +22,23 @@ module A
 
     # alias foo bar
 
-    def bar(x: untyped) : String
+    # def bar: (x: untyped) -> String
 
     # type t = foo
 
-    type t[A] = [A, Integer]
+    # type t[A] = [A, Integer]
+
+    # def foo: -> void
+
+    # include Foo[untyped]
+
+    # extend Bar
+
+    # prepend _Foo
+
+    attr_reader foo (@foo) : String | nil
+
+    
   # end
 end
 

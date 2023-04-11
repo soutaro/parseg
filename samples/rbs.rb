@@ -52,6 +52,9 @@ tokenizer = define_tokenizer(
   kBOOL: /bool/,
   kDEF: /def/,
   kUNCHECKED: /unchecked/,
+  kINCLUDE: /include/,
+  kEXTEND: /extend/,
+  kPREPEND: /prepend/,
   kIN: /in/,
   kOUT: /out/,
   kALIAS: /alias/,
@@ -116,7 +119,7 @@ grammar = Grammar.new() do |grammar|
 
   grammar[:return_type].rule = NT(:optional_type)
 
-  grammar[:method_type].rule = Opt(NT(:type_params)) + NT(:params) + Opt(NT(:block)) + T(:kARROW) + NT(:return_type)
+  grammar[:method_type].rule = Opt(NT(:type_params)) + Opt(NT(:params)) + Opt(NT(:block)) + T(:kARROW) + NT(:return_type)
 
   grammar[:type_params].rule =
     T(:kLBRACKET) + Repeat(NT(:type_param), T(:kCOMMA)) + T(:kRBRACKET)
@@ -217,6 +220,8 @@ grammar = Grammar.new() do |grammar|
 
   grammar[:method_name].rule = T(:tLIDENT)
 
+  grammar[:attribute_name].rule = T(:tLIDENT)
+
   grammar[:method_types].rule =
     Alt(
       T(:kDOT3),
@@ -235,6 +240,26 @@ grammar = Grammar.new() do |grammar|
   grammar[:global_decl].rule =
     T(:tGIDENT) + T(:kCOLON) + NT(:simple_type)
 
+  attribute = -> (keyword) {
+    T(keyword) + NT(:attribute_name) + Opt(T(:kLPAREN) + Opt(T(:tATIDENT)) + T(:kRPAREN)) + T(:kCOLON) + NT(:type)
+  }
+
+  grammar[:attr_reader].rule = attribute[:kATTRREADER]
+  grammar[:attr_writer].rule = attribute[:kATTRWRITER]
+  grammar[:attr_accessor].rule = attribute[:kATTRACCESSOR]
+
+  mixin = -> (opr, only_interface:) {
+    T(opr) + type_names[alias_name: false, module_name: !only_interface] + Opt(T(:kLBRACKET) + Repeat(NT(:type), T(:kCOMMA)) + T(:kRBRACKET))
+  }
+
+  grammar[:include].rule = mixin[:kINCLUDE, only_interface: false]
+  grammar[:extend].rule = mixin[:kEXTEND, only_interface: false]
+  grammar[:prepend].rule = mixin[:kPREPEND, only_interface: false]
+
+  grammar[:include_interface].rule = mixin[:kINCLUDE, only_interface: true]
+  grammar[:extend_interface].rule = mixin[:kEXTEND, only_interface: true]
+  grammar[:prepend_interface].rule = mixin[:kPREPEND, only_interface: true]
+
   grammar[:module_members].rule = Opt(
     Repeat(
       Alt(
@@ -245,6 +270,12 @@ grammar = Grammar.new() do |grammar|
         NT(:method_definition),
         NT(:alias_decl),
         NT(:type_alias_decl),
+        NT(:include),
+        NT(:extend),
+        NT(:prepend),
+        NT(:attr_reader),
+        NT(:attr_writer),
+        NT(:attr_accessor)
       )
     )
   )
