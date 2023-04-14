@@ -10,6 +10,7 @@ module Parseg
       @factory = factory
       @skip_unknown_tokens_enabled = false
       @error_tolerant_enabled = true
+      @parsing_changes_stack = []
     end
 
     def parse(non_terminal)
@@ -35,12 +36,36 @@ module Parseg
       )
     end
 
+    def current_token_id
+      factory.current_id
+    end
+
+    def current_token_id!
+      factory.current_id!
+    end
+
+    def current_token_type
+      factory.current_type
+    end
+
+    def current_token_included_in?(set)
+       set.include?(current_token_type)
+    end
+
+    def current_token_equals?(type)
+      current_token_type == type
+    end
+
+    def advance_token
+      factory.advance_token()
+    end
+
     def skip_non_consumable_tokens(consumable_tokens, skip_tokens)
       if skip_unknown_tokens_enabled
-        while factory.current_type
-          break if consumable_tokens.include?(factory.current_type)
-          skip_tokens << factory.current_id!
-          factory.advance_token()
+        while current_token_type
+          break if current_token_included_in?(consumable_tokens)
+          skip_tokens << current_token_id!
+          advance_token()
         end
       end
     end
@@ -72,9 +97,9 @@ module Parseg
 
         case expr
         when Grammar::Expression::TokenSymbol
-          if factory.current_type == expr.token
-            id = factory.current_id!()
-            factory.advance_token
+          if current_token_equals?(expr.token)
+            id = current_token_id!
+            advance_token()
 
             if expr.next_expr
               next_tree = parse_rule(expr.next_expr, consumable_tokens, skip_tokens)
@@ -82,7 +107,7 @@ module Parseg
 
             Tree::TokenTree.new(expr, id, next_tree: next_tree)
           else
-            id = factory.current_id
+            id = current_token_id
 
             if error_tolerant_enabled
               if expr.next_expr
@@ -98,7 +123,7 @@ module Parseg
         when Grammar::Expression::NonTerminalSymbol
           first_tokens = expr.non_terminal.rule.first_tokens
 
-          if first_tokens.include?(factory.current_type)
+          if current_token_included_in?(first_tokens)
             value = parse_rule(
               expr.non_terminal.rule,
               new_consumable_tokens(consumable_tokens, expr.next_expr),
@@ -120,7 +145,7 @@ module Parseg
 
               Tree::NonTerminalTree.new(expr, nil, next_tree: next_tree)
             else
-              nid = factory.current_id
+              nid = current_token_id
 
               if error_tolerant_enabled
                 if expr.next_expr
@@ -143,7 +168,7 @@ module Parseg
         when Grammar::Expression::Optional
           first_tokens = expr.expression.first_tokens
 
-          if first_tokens.include?(factory.current_type)
+          if current_token_included_in?(first_tokens)
             value = parse_rule(
               expr.expression,
               new_consumable_tokens(consumable_tokens, expr.next_expr),
@@ -158,11 +183,11 @@ module Parseg
           Tree::OptionalTree.new(expr, value, next_tree: next_tree)
 
         when Grammar::Expression::Alternation
-          nid = factory.current_id()
+          nid = current_token_id()
 
           expr.expressions.each do |opt|
             option_first_tokens = opt.first_tokens
-            if option_first_tokens.include?(factory.current_type) || option_first_tokens.include?(nil)
+            if current_token_included_in?(option_first_tokens) || option_first_tokens.include?(nil)
               value = parse_rule(
                 opt,
                 new_consumable_tokens(consumable_tokens, expr.next_expr),
@@ -200,25 +225,25 @@ module Parseg
           end
 
           while true
-            last_token_id = factory.current_id
+            last_token_id = current_token_id
             values << parse_rule(
               expr.content,
               consumable_for_content,
               skip_tokens
             )
 
-            break unless factory.current_id
+            break unless current_token_id
 
             separator_first_tokens = expr.separator.first_tokens
             case
-            when separator_first_tokens.include?(factory.current_type)
+            when current_token_included_in?(separator_first_tokens)
               values << parse_rule(
                 expr.separator,
                 consumable_for_separator,
                 skip_tokens
               )
             when separator_first_tokens.include?(nil)
-              unless expr.content.first_tokens.include?(factory.current_type)
+              unless current_token_included_in?(expr.content.first_tokens)
                 break
               end
             else
@@ -226,7 +251,7 @@ module Parseg
             end
 
             # Stop loop when one content-separator iteration doesn't consume any token
-            if last_token_id == factory.current_id
+            if last_token_id == current_token_id
               break
             end
           end

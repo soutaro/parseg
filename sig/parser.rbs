@@ -31,5 +31,17 @@ module Parseg
     def new_consumable_tokens: (Set[Symbol] tokens, *Grammar::Expression::t? next_exprs) -> Set[Symbol]
 
     def throw_error_tree: (Tree::MissingTree) -> bot
+
+    def current_token_type: () -> Symbol?
+
+    def current_token_id: () -> Integer?
+
+    def current_token_id!: () -> Integer
+
+    def current_token_included_in?: (Set[Symbol?]) -> bool
+
+    def current_token_equals?: (Symbol?) -> bool
+
+    def advance_token: () -> void
   end
 end
