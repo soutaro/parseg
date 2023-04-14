@@ -33,9 +33,10 @@ class ParserTest < Minitest::Test
   end
 
   def parse(string, start = :exprs)
+
     parser = Parseg::Parser.new(
       grammar: Grammar,
-      tokenizer: Tokenizer.tokenizer(string)
+      factory: Parseg::TokenFactory.new(tokenizer: Tokenizer, input: string)
     )
 
     yield parser if block_given?
@@ -94,7 +95,7 @@ class ParserTest < Minitest::Test
           }
         ]
       },
-      locator: result.token_locator
+      factory: result.factory
     )
   end
 
@@ -136,7 +137,7 @@ class ParserTest < Minitest::Test
           },
         ]
       },
-      locator: result.token_locator
+      factory: result.factory
     )
   end
 
@@ -187,7 +188,7 @@ class ParserTest < Minitest::Test
           }
         ]
       },
-      locator: result.token_locator
+      factory: result.factory
     )
   end
 
@@ -202,7 +203,7 @@ class ParserTest < Minitest::Test
       {
         unexpected: nil
       },
-      locator: result.token_locator
+      factory: result.factory
     )
   end
 
@@ -237,7 +238,7 @@ class ParserTest < Minitest::Test
           [:RPAREN, ")"]
         ]
       },
-      locator: result.token_locator
+      factory: result.factory
     )
   end
 
@@ -271,7 +272,7 @@ class ParserTest < Minitest::Test
           }
         ]
       },
-      locator: result.token_locator
+      factory: result.factory
     )
   end
 
@@ -328,7 +329,7 @@ class ParserTest < Minitest::Test
           }
         ]
       },
-      locator: result.token_locator
+      factory: result.factory
     )
   end
 end

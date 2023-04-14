@@ -33,14 +33,14 @@ rule = ARGV[1].to_sym
 
 STDERR.puts "Loading grammar from #{file}..."
 
-# @type var tokenizer: ^(String) -> Parseg::_Tokenizer
+# @type var tokenizer: Parseg::_Tokenizer
 # @type var grammar: Parseg::Grammar
-tokenizer, grammar = eval(File.read(file), empty_binding, file)
+tokenizer, grammar = eval(File.read(file), __skip__ = empty_binding, file)
 
 writer = LSP::Transport::Stdio::Writer.new
 reader = LSP::Transport::Stdio::Reader.new
 
-trees = {} #: Hash[String, [Parseg::Result, String, Range[Integer]?]]
+trees = {} #: Hash[String, Parseg::Result]
 
 STDERR.puts "Starting loop..."
 
@@ -64,57 +64,61 @@ reader.read do |request|
       }
     }
   when :"textDocument/didChange"
+    # @type var uri: String
+    # @type var changes: Array[Parseg::TokenFactory::change]
     uri = request[:params][:textDocument][:uri]
-    changes = request[:params][:contentChanges]
-    _, content, range = trees[uri]
-
-    changes.each do |change|
-      buffer = RBS::Buffer.new(name: uri, content: content)
-
+    changes = request[:params][:contentChanges].map do |change|
       start_line = change[:range][:start][:line] + 1
       start_column = change[:range][:start][:character]
 
       end_line = change[:range][:end][:line] + 1
       end_column = change[:range][:end][:character]
 
-      changed_range = buffer.loc_to_pos([start_line, start_column]) ...  buffer.loc_to_pos([end_line, end_column])
-      content[changed_range] = change[:text]
+      [
+        change[:text],
+        [start_line, start_column],
+        [end_line, end_column]
+      ]
+    end
+    last_result = trees[uri]
 
-      if range
-        if changed_range.begin < range.begin
-          range = changed_range.begin ... range.begin
-        end
-        if range.end < changed_range.end
-          range = range.end ... changed_range.end
-        end
-      else
-        range = changed_range
-      end
+    factory_with_changes = last_result.factory.update(changes)
+
+    STDERR.puts "Running parser with #{factory_with_changes.changes.size} pending changes..."
+    factory_with_changes.changed_input.each_line() do |line|
+      STDERR.puts "> #{line.chomp}"
     end
 
-    parser = Parseg::Parser.new(grammar: grammar, tokenizer: tokenizer[content])
-    parser.error_tolerant_enabled = error_tolerant_enabled
-    parser.skip_unknown_tokens_enabled = skip_tokens_enabled
-    result = parser.parse(grammar.non_terminals[rule])
-    trees[uri] = [result, content, nil]
+    result = Parseg::Parser.new(grammar: grammar, factory: last_result.factory.reset(factory_with_changes.changed_input)).yield_self do |parser|
+      parser.error_tolerant_enabled = error_tolerant_enabled
+      parser.skip_unknown_tokens_enabled = skip_tokens_enabled
+      parser.parse(grammar.non_terminals[rule])
+    end
+
+    # if result.tree.error_tree?
+    #   result = Parseg::Parser.new(grammar: grammar, factory: factory_with_changes).yield_self do |parser|
+    #     parser.error_tolerant_enabled = error_tolerant_enabled
+    #     parser.skip_unknown_tokens_enabled = skip_tokens_enabled
+    #     parser.parse(grammar.non_terminals[rule])
+    #   end
+    # end
+
+    trees[uri] = result
 
   when :"textDocument/didOpen"
     uri = request[:params][:textDocument][:uri]
     text = request[:params][:textDocument][:text]
 
     start = grammar.non_terminals[rule]
-    tok = tokenizer[text]
 
-    parser = Parseg::Parser.new(grammar: grammar, tokenizer: tokenizer[text])
+    factory = Parseg::TokenFactory.new(tokenizer: tokenizer, input: text)
+
+    parser = Parseg::Parser.new(grammar: grammar, factory: factory)
     parser.error_tolerant_enabled = error_tolerant_enabled
     parser.skip_unknown_tokens_enabled = skip_tokens_enabled
     result = parser.parse(start)
 
-    trees[uri] = [
-      result,
-      text,
-      nil
-    ]
+    trees[uri] = result
 
   when :"textDocument/didClose"
     uri = request[:params][:textDocument][:uri]
@@ -122,18 +126,19 @@ reader.read do |request|
 
   when :"textDocument/documentSymbol"
     uri = request[:params][:textDocument][:uri]
-    result, content, _ = trees[uri]
+    result = trees[uri]
+    content = result.factory.changed_input
     buffer = RBS::Buffer.new(name: uri, content: content)
 
-    formatter = Parseg::LspTreeFormatter.new(result.token_locator, buffer)
+    formatter = Parseg::LspTreeFormatter.new(result.factory, buffer)
     response = formatter.format_tree(result.tree, last_position: { line: 0, character: 0 })
 
     diagnostics = [] #: Array[LanguageServer::Protocol::Interface::Diagnostic]
 
     result.skip_tokens.each do |token_id|
-      _, type, offset, value = result.token_locator.token(token_id)
+      _, type, offset, value = result.factory.token(token_id)
 
-      range = result.token_locator.token_range(token_id)
+      range = result.factory.token_range(token_id)
       start_line, start_column = buffer.pos_to_loc(range.begin)
       end_line, end_column = buffer.pos_to_loc(range.end)
 
@@ -171,9 +176,9 @@ reader.read do |request|
 
     result.each_error_tree() do |error|
       if error.token
-        _, type, offset, value = result.token_locator.token(error.token)
+        type, offset, value = result.factory.token(error.token)
 
-        range = result.token_locator.token_range(error.token)
+        range = result.factory.token_range(error.token)
         start_line, start_column = buffer.pos_to_loc(range.begin)
         end_line, end_column = buffer.pos_to_loc(range.end)
 

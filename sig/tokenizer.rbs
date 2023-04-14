@@ -1,9 +1,9 @@
 module Parseg
   interface _Tokenizer
-    # Returns a tuple of token type, start position, and the value String
+    # Yields a tuple of token type, start position, and the value String from given `source`
     #
-    # Returns `nil` if there are no more tokens left in the input.
+    # Yields `nil` if there are no more tokens left in the input.
     #
-    def next_token: () -> [Symbol, Integer, String]?
+    def each_token: (String source) { (token?) -> void } -> void
   end
 end

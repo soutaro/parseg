@@ -20,7 +20,7 @@ end
 
 require "parseg/strscan_tokenizer"
 require "parseg/grammar"
-require "parseg/token_locator"
+require "parseg/token_factory"
 require "parseg/result"
 require "parseg/tree"
 require "parseg/parser"

@@ -2,10 +2,10 @@ module Parseg
   class LspTreeFormatter
     LSP = LanguageServer::Protocol
 
-    attr_reader :locator, :buffer
+    attr_reader :factory, :buffer
 
-    def initialize(locator, buffer)
-      @locator = locator
+    def initialize(factory, buffer)
+      @factory = factory
       @buffer = buffer
     end
 
@@ -18,7 +18,7 @@ module Parseg
           when Tree::EmptyTree
             []
           when Tree::TokenTree
-            id, type, offset, string = locator.token(tree.token_id)
+            type, offset, string = factory.token(tree.token_id)
 
             start_pos = buffer.pos_to_loc(offset)
             end_pos = buffer.pos_to_loc(offset + string.size)
@@ -115,14 +115,14 @@ module Parseg
             end
           when Tree::MissingTree
             if id = tree.token
-              range = locator.token_range(id)
+              range = factory.token_range(id)
               start_pos = buffer.pos_to_loc(range.begin)
               end_pos = buffer.pos_to_loc(range.end)
 
               [
                 LSP::Interface::DocumentSymbol.new(
                   detail: "Expected one of: #{tree.expression.first_tokens}",
-                  name: "#{locator.string(id)} (#{locator.token(id)[1]})",
+                  name: "#{factory.token_string!(id)} (#{factory.token_type!(id)})",
                   tags: [1],
                   kind: LSP::Constant::SymbolKind::ENUM_MEMBER,
                   range: {

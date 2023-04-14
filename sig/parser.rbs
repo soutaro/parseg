@@ -8,9 +8,7 @@ module Parseg
   class Parser
     attr_reader grammar: Grammar
 
-    attr_reader tokenizer: _Tokenizer
-
-    attr_reader token_locator: TokenLocator
+    attr_reader factory: TokenFactory
 
     # `true` to enable *skip unknown tokens* feature
     attr_accessor skip_unknown_tokens_enabled: bool
@@ -18,51 +16,13 @@ module Parseg
     # `true` to enable *error tolerant* mode
     attr_accessor error_tolerant_enabled: bool
 
-    @token_id: Integer
-
-    @current_token: token?
-
-    def initialize: (grammar: Grammar, tokenizer: _Tokenizer) -> void
+    def initialize: (grammar: Grammar, factory: TokenFactory) -> void
 
     def parse: (Grammar::NonTerminal) -> Result
 
     private
 
     @exit_symbol: Symbol?
-
-    # Update `#current_token` by reading a token from `#tokenizer`
-    #
-    # Returns the old `#current_token`.
-    #
-    def advance_token: () -> token?
-
-    # Update `#current_token` by reading a token from `#rokenizer`
-    #
-    # Returns the old `#current_token`.
-    # Raises an exception if `#current_token` is `nil`.
-    #
-    def advance_token!: () -> token
-
-    # Returns the token at the head of the input
-    #
-    %a{pure} def current_token: () -> token?
-
-    # Returns the token at the head of the input or raise an exception
-    #
-    def current_token!: () -> token
-
-    # Returns `#id` of `#current_token`
-    #
-    %a{pure} def token_id: () -> Integer?
-
-    # Returns `#id` of `#current_token`
-    #
-    # Raises an exception if `#current_token` is `nil`.
-    #
-    def token_id!: () -> Integer
-
-    # Returns the `#type` of the `#current_token`
-    %a{pure} def token_type: () -> Symbol?
 
     def parse_rule: (Grammar::Expression::t, Set[Symbol] consumable_tokens, Array[Integer] skip_tokens) -> Tree::t
 

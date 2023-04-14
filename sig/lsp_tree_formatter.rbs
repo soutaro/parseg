@@ -3,13 +3,13 @@ use LanguageServer::Protocol::Interface::*
 
 module Parseg
   class LspTreeFormatter
-    attr_reader locator: TokenLocator
+    attr_reader factory: TokenFactory
 
     attr_reader buffer: Buffer
 
     module LSP = LanguageServer::Protocol
 
-    def initialize: (TokenLocator, Buffer) -> void
+    def initialize: (TokenFactory, Buffer) -> void
 
     def format_tree: (Tree::t, last_position: LanguageServer::Protocol::position) -> Array[DocumentSymbol]
   end

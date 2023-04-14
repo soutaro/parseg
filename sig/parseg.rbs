@@ -1,7 +1,7 @@
 module Parseg
   VERSION: String
 
-  type token = [Integer, Symbol, Integer, String]
+  type token = [Symbol, Integer, String]
 
   attr_reader self.logger: ActiveSupport::TaggedLogging & _Logger
 

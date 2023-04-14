@@ -1,10 +1,10 @@
 module Parseg
   class Result
-    attr_reader :token_locator, :tree, :skip_tokens
+    attr_reader :factory, :tree, :skip_tokens
 
-    def initialize(tree:, token_locator:, skip_tokens:)
+    def initialize(tree:, factory:, skip_tokens:)
       @tree = tree
-      @token_locator = token_locator
+      @factory = factory
       @skip_tokens = skip_tokens
     end
 

@@ -1,37 +1,40 @@
 include Parseg
 
 def define_tokenizer(**defn)
-  -> (string) {
-    tokenizer = Object.new
+  tokenizer = Object.new
 
+  tokenizer.singleton_class.define_method(:each_token) do |string, &block|
     scan = StringScanner.new(string)
 
-    tokenizer.singleton_class.define_method(:next_token) do
+    while true
       while str = scan.scan(/(\s+)|(#[^\n]*)/)
         # nop
       end
 
+      break if scan.eos?
+
       defn.each do |type, regexp|
         if string = scan.scan(regexp)
-          return [type, scan.charpos - string.size, string]
+          block.call [type, scan.charpos - string.size, string]
+          break
         end
       end
-
-      return nil
     end
 
-    tokenizer.singleton_class.define_method(:all_tokens) do
-      toks = []
+    block.call nil
+  end
 
-      while tok = next_token
-        toks << tok
-      end
+  tokenizer.singleton_class.define_method(:all_tokens) do
+    toks = []
 
-      toks
+    while tok = next_token
+      toks << tok
     end
 
-    tokenizer
-  }
+    toks
+  end
+
+  tokenizer
 end
 
 tokenizer = define_tokenizer(

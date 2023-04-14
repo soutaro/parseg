@@ -1,11 +1,11 @@
 module Parseg
   class StrscanTokenizer
+    include _Tokenizer
+
     attr_reader tokens: Hash[Symbol, Regexp]
-    
+
     attr_reader skips: Regexp
 
     def initialize: (Hash[Symbol, Regexp] tokens, Regexp skips) -> void
-
-    def tokenizer: (String input) -> _Tokenizer
   end
 end

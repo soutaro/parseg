@@ -1,0 +1,94 @@
+module Parseg
+  # TokenFactory generates a sequence of tokens, with unique `id`
+  #
+  # There are two modes:
+  #
+  # 1. Standalone mode starts from the fresh input (with empty `#changes`)
+  # 2. Incremental mode that knows where the input is changed
+  #
+  class TokenFactory
+    # Pair of 1-origin line number and 0-origin character (current) number
+    type position = [Integer, Integer]
+
+    type change = [String, position, position]
+
+    attr_reader tokenizer: _Tokenizer
+
+    attr_reader original_input: String
+
+    # The input string where `changes` are applied to the `original_input`
+    #
+    attr_reader changed_input: String
+
+    attr_reader tokens: Hash[Integer, token]
+
+    attr_reader changes: Array[change]
+
+    attr_reader current_token: token?
+
+    attr_reader current_id: Integer?
+
+    attr_reader enumerator: Enumerator[token?, void]
+
+    @max_id: Integer
+
+    # Returns a fresh token id
+    def next_id: () -> Integer
+
+    def initialize: (tokenizer: _Tokenizer, input: String, ?changes: Array[change]) -> void
+
+    # Returns a new TokenFactory with given changes
+    #
+    # This is for *incremental* mode.
+    #
+    def update: (Array[change] changes) -> TokenFactory
+
+    # Returns a new TokenFactory with given new input
+    #
+    # This is for *standalone* mode.
+    #
+    def reset: (String input) -> TokenFactory
+
+    # The range that contains everything in `#changes`
+    #
+    # * Returns `nil` with empty change
+    #
+    def surrounding_changed_range: () -> Range[Integer]?
+
+    @surrounding_changed_range: Range[Integer] | Integer | nil
+
+    def advance_token: () -> [Integer, token]?
+
+    def advance_token!: () -> [Integer, token]
+
+    def current_token!: () -> token
+
+    def current_id!: () -> Integer
+
+    %a{pure} def current_type: () -> Symbol?
+
+    def current_type!: () -> Symbol
+
+    %a{pure} def current_range: () -> Range[Integer]?
+
+    def current_range!: () -> Range[Integer]
+
+    def token_range: (Integer id) -> Range[Integer]
+
+    def token: (Integer id) -> token
+
+    def token_string: (Integer id) -> String?
+
+    def token_string!: (Integer id) -> String
+
+    def token_type: (Integer id) -> Symbol?
+
+    def token_type!: (Integer id) -> Symbol
+
+    # Returns `true` if a token of the `id` is reused one
+    #
+    # `id` is `current_id` if omitted.
+    #
+    def token_changed?: (?Integer id) -> bool
+  end
+end

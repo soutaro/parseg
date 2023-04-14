@@ -2,13 +2,14 @@
 
 # $ENV : Integer
 
-module A
+module A[A]
+  def foo: () -> void
   # module C[unchecked in A, B]
 
     # def foo: ...
 
     # def bar: () -> void
-    #        | () -> Integer
+          #  | () -> Integer
 
     # alias foo bar
 
@@ -36,9 +37,10 @@ module A
 
     # prepend _Foo
 
-    attr_reader foo (@foo) : String | nil
+    # attr_reader foo (@foo) : String | nil
 
-    
   # end
+  #
+  # def foo: () -> void
 end
 
