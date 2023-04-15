@@ -17,7 +17,7 @@ module Parseg
       skips = [] #: Array[Integer]
 
       if error_tolerant_enabled
-        tree = parse_rule(non_terminal.rule, Set[], skips)
+        tree = push_stack(non_terminal.name) { parse_rule(non_terminal.rule, Set[], skips) }
 
         tree = Tree::NonTerminalTree.new(
           Grammar::Expression::NonTerminalSymbol.new(non_terminal),
@@ -45,11 +45,20 @@ module Parseg
     end
 
     def current_token_type
-      factory.current_type
+      if @leaving_change
+        true
+      else
+        factory.current_type
+      end
     end
 
     def current_token_included_in?(set)
-       set.include?(current_token_type)
+      case type = current_token_type
+      when true
+        false
+      else
+        set.include?(type)
+      end
     end
 
     def current_token_equals?(type)
@@ -57,12 +66,66 @@ module Parseg
     end
 
     def advance_token
+      before = factory.token_changed?()
       factory.advance_token()
+      after =
+        if factory.current_id
+          factory.token_changed?()
+        else
+          before
+        end
+
+      case
+      when !before && after
+        STDERR.puts("Enter into changes with `#{factory.current_type}` in #{current_non_terminal_name}")
+      when before && !after
+        @leaving_change = true
+        STDERR.puts("Leave from changes with `#{factory.current_type}` in #{current_non_terminal_name}")
+      end
+    end
+
+    def current_non_terminal_name
+      symbol, bool = @parsing_changes_stack.last
+
+      symbol
+    end
+
+    def parsing_change?
+      @parsing_changes_stack.last&.[](1) || false
+    end
+
+    def push_stack(name)
+      @parsing_changes_stack.push(
+        [
+          name,
+          parsing_change?
+        ]
+      )
+      yield
+    ensure
+      @parsing_changes_stack.pop()
+    end
+
+    def entered_to_changed?
+      *_, prev, _last = @parsing_changes_stack
+
+      if prev && _last
+        !prev[1] && parsing_change?
+      else
+        false
+      end
+    end
+
+    def consuming_changed_token
+      if last = @parsing_changes_stack.last
+        last[1] = true
+      end
     end
 
     def skip_non_consumable_tokens(consumable_tokens, skip_tokens)
       if skip_unknown_tokens_enabled
-        while current_token_type
+        while type = current_token_type
+          break if type == true
           break if current_token_included_in?(consumable_tokens)
           skip_tokens << current_token_id!
           advance_token()
@@ -99,6 +162,9 @@ module Parseg
         when Grammar::Expression::TokenSymbol
           if current_token_equals?(expr.token)
             id = current_token_id!
+            if factory.token_changed?()
+              consuming_changed_token()
+            end
             advance_token()
 
             if expr.next_expr
@@ -121,40 +187,48 @@ module Parseg
           end
 
         when Grammar::Expression::NonTerminalSymbol
-          first_tokens = expr.non_terminal.rule.first_tokens
+          push_stack(expr.non_terminal.name) do
+            first_tokens = expr.non_terminal.rule.first_tokens
 
-          if current_token_included_in?(first_tokens)
-            value = parse_rule(
-              expr.non_terminal.rule,
-              new_consumable_tokens(consumable_tokens, expr.next_expr),
-              skip_tokens
-            )
+            if current_token_included_in?(first_tokens)
+              value = parse_rule(
+                expr.non_terminal.rule,
+                new_consumable_tokens(consumable_tokens, expr.next_expr),
+                skip_tokens
+              )
 
-            if expr.next_expr
-              next_tree = parse_rule(expr.next_expr, consumable_tokens, skip_tokens)
-            end
+              Parseg.logger.fatal { @parsing_changes_stack.inspect }
 
-            Tree::NonTerminalTree.new(expr, value, next_tree: next_tree)
-          else
-            if first_tokens.include?(nil)
-              # ok to skip the rule
+              if @leaving_change && entered_to_changed?
+                @leaving_change = false
+              end
 
               if expr.next_expr
                 next_tree = parse_rule(expr.next_expr, consumable_tokens, skip_tokens)
               end
 
-              Tree::NonTerminalTree.new(expr, nil, next_tree: next_tree)
+              Tree::NonTerminalTree.new(expr, value, next_tree: next_tree)
             else
-              nid = current_token_id
+              if first_tokens.include?(nil)
+                # ok to skip the rule
 
-              if error_tolerant_enabled
                 if expr.next_expr
                   next_tree = parse_rule(expr.next_expr, consumable_tokens, skip_tokens)
                 end
 
-                Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+                Tree::NonTerminalTree.new(expr, nil, next_tree: next_tree)
               else
-                throw_error_tree Tree::MissingTree.new(expr, nid, next_tree: nil)
+                nid = current_token_id
+
+                if error_tolerant_enabled
+                  if expr.next_expr
+                    next_tree = parse_rule(expr.next_expr, consumable_tokens, skip_tokens)
+                  end
+
+                  Tree::MissingTree.new(expr, nid, next_tree: next_tree)
+                else
+                  throw_error_tree Tree::MissingTree.new(expr, nid, next_tree: nil)
+                end
               end
             end
           end
