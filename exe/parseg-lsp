@@ -95,13 +95,13 @@ reader.read do |request|
       parser.parse(grammar.non_terminals[rule])
     end
 
-    # if result.tree.error_tree?
-    #   result = Parseg::Parser.new(grammar: grammar, factory: factory_with_changes).yield_self do |parser|
-    #     parser.error_tolerant_enabled = error_tolerant_enabled
-    #     parser.skip_unknown_tokens_enabled = skip_tokens_enabled
-    #     parser.parse(grammar.non_terminals[rule])
-    #   end
-    # end
+    if result.has_error?
+      result = Parseg::Parser.new(grammar: grammar, factory: factory_with_changes).yield_self do |parser|
+        parser.error_tolerant_enabled = error_tolerant_enabled
+        parser.skip_unknown_tokens_enabled = skip_tokens_enabled
+        parser.parse(grammar.non_terminals[rule])
+      end
+    end
 
     trees[uri] = result
 
@@ -147,7 +147,7 @@ reader.read do |request|
           start: { line: start_line - 1, character: start_column },
           end: { line: end_line - 1, character: end_column }
         },
-        severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::INFORMATION,
+        severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::WARNING,
         message: "Token skipped: #{type}, #{value}"
       )
     end
@@ -187,12 +187,28 @@ reader.read do |request|
             start: { line: start_line - 1, character: start_column },
             end: { line: end_line - 1, character: end_column }
           },
-          severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::WARNING,
+          severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::ERROR,
           message: "Unexpected token: #{type}, #{value}, expected tokens: #{error.expression.first_tokens}"
         )
 
         diagnostics << diagnostic
       end
+    end
+
+    if range = result.factory.surrounding_changed_range
+      start_line, start_column = buffer.pos_to_loc(range.begin)
+      end_line, end_column = buffer.pos_to_loc(range.end)
+
+      diagnostic = LanguageServer::Protocol::Interface::Diagnostic.new(
+        range: {
+          start: { line: start_line - 1, character: start_column },
+          end: { line: end_line - 1, character: end_column }
+        },
+        severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::INFORMATION,
+        message: "Changed after last parsing success"
+      )
+
+      diagnostics << diagnostic
     end
 
     STDERR.puts "Sending publishDiagnostics notification with #{diagnostics.size} diagnostics"

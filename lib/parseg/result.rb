@@ -57,5 +57,9 @@ module Parseg
         enum_for :each_tree
       end
     end
+
+    def has_error?
+      tree.error_tree? ? true : !skip_tokens.empty?
+    end
   end
 end

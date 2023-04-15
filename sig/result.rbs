@@ -13,5 +13,7 @@ module Parseg
 
     def each_tree: (?Tree::t) { (Tree::t) -> void } -> void
                  | () -> Enumerator[Tree::t, void]
+
+    def has_error?: () -> bool
   end
 end

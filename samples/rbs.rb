@@ -13,12 +13,14 @@ def define_tokenizer(**defn)
 
       break if scan.eos?
 
-      defn.each do |type, regexp|
+      failed = defn.each do |type, regexp|
         if string = scan.scan(regexp)
           block.call [type, scan.charpos - string.size, string]
-          break
+          break false
         end
       end
+
+      block.call nil if failed
     end
 
     block.call nil
