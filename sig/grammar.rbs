@@ -120,11 +120,13 @@ module Parseg
     end
 
     class NonTerminal
-      attr_accessor rule: Expression::NonTerminalSymbol | Expression::Empty
+      attr_accessor rule: Expression::t
 
       attr_reader name: Symbol
 
       def initialize: (Symbol) -> void
+
+      %a{pure} def closing_token: () -> Expression::TokenSymbol?
     end
 
     interface _WithGrammar

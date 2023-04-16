@@ -188,6 +188,10 @@ module Parseg
 
         when Grammar::Expression::NonTerminalSymbol
           push_stack(expr.non_terminal.name) do
+            if closing_token = expr.non_terminal.closing_token
+              Parseg.logger.fatal { "closing_token = #{closing_token.token}" }
+            end
+
             first_tokens = expr.non_terminal.rule.first_tokens
 
             if current_token_included_in?(first_tokens)
@@ -196,8 +200,6 @@ module Parseg
                 new_consumable_tokens(consumable_tokens, expr.next_expr),
                 skip_tokens
               )
-
-              Parseg.logger.fatal { @parsing_changes_stack.inspect }
 
               if @leaving_change && entered_to_changed?
                 @leaving_change = false

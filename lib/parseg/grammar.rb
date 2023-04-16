@@ -58,6 +58,18 @@ module Parseg
         @name = name
         @rule = Expression::Empty.instance
       end
+
+      def closing_token
+        if last_expr = rule #: Expression::t?
+          while last_expr.next_expr
+            last_expr = last_expr.next_expr
+          end
+
+          if last_expr.is_a?(Expression::TokenSymbol)
+            return last_expr
+          end
+        end
+      end
     end
 
     module Expression
