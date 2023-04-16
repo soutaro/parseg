@@ -188,10 +188,6 @@ module Parseg
 
         when Grammar::Expression::NonTerminalSymbol
           push_stack(expr.non_terminal.name) do
-            if closing_token = expr.non_terminal.closing_token
-              Parseg.logger.fatal { "closing_token = #{closing_token.token}" }
-            end
-
             first_tokens = expr.non_terminal.rule.first_tokens
 
             if current_token_included_in?(first_tokens)

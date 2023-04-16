@@ -14,13 +14,13 @@ module Parseg
 
     attr_reader tokenizer: _Tokenizer
 
-    attr_reader original_input: String
+    attr_reader prev: (TokenFactory | String)
 
-    # The input string where `changes` are applied to the `original_input`
+    # The input string where `changes` are applied to the input of `#previous_factory`
     #
-    attr_reader changed_input: String
+    attr_reader input: String
 
-    attr_reader tokens: Hash[Integer, token]
+    attr_reader tokens: Array[[Integer, token]]
 
     attr_reader changes: Array[change]
 
@@ -28,14 +28,15 @@ module Parseg
 
     attr_reader current_id: Integer?
 
-    attr_reader enumerator: Enumerator[token?, void]
+    attr_reader enumerator: Enumerator[[Integer, token]?, void]
 
     @max_id: Integer
 
     # Returns a fresh token id
     def next_id: () -> Integer
 
-    def initialize: (tokenizer: _Tokenizer, input: String, ?changes: Array[change]) -> void
+    def initialize: (tokenizer: _Tokenizer, input: String) -> void
+                  | (tokenizer: _Tokenizer, prev: TokenFactory, ?changes: Array[change]) -> void
 
     # Returns a new TokenFactory with given changes
     #
@@ -43,11 +44,11 @@ module Parseg
     #
     def update: (Array[change] changes) -> TokenFactory
 
-    # Returns a new TokenFactory with given new input
+    # Returns a new TokenFactory with pending changes applied
     #
     # This is for *standalone* mode.
     #
-    def reset: (String input) -> TokenFactory
+    def reset: () -> TokenFactory
 
     # The range that contains everything in `#changes`
     #
@@ -90,5 +91,11 @@ module Parseg
     # `id` is `current_id` if omitted.
     #
     def token_changed?: (?Integer id) -> bool
+
+    # Tokens that are newly inserted into `tokens` array
+    def inserted_tokens: () -> Hash[Integer, token]
+
+    # Tokens that are deleted from `prev.tokens` array
+    def deleted_tokens: () -> Hash[Integer, token]
   end
 end

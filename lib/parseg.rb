@@ -7,6 +7,7 @@ require "active_support"
 require "active_support/tagged_logging"
 require "language_server-protocol"
 require "strscan"
+require "rbs"
 
 module Parseg
   def self.logger

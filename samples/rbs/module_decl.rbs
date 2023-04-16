@@ -1,9 +1,5 @@
 module A
-  module Foo
-
+  module B
   end
-
-  # def self.foo: () { () -> void } -> void
-
-  def foo: () -> x
+  def foo: () -> void
 end

@@ -1,14 +1,27 @@
 module Parseg
   class TokenFactory
-    attr_reader :tokenizer, :changed_input, :original_input, :tokens, :changes, :current_token, :current_id, :enumerator
+    attr_reader :tokenizer, :input, :prev, :changes, :current_token, :current_id, :enumerator
+    attr_reader :tokens
 
-    def initialize(tokenizer:, input:, changes: [])
+    def initialize(tokenizer:, input: nil, prev: nil, changes: [])
       @tokenizer = tokenizer
-      @original_input = input
+      if input
+        @prev = input
+      end
+      if prev
+        @prev = prev
+      end
       @changes = changes
-      @tokens = {}
 
-      @changed_input = changes.each.with_object(original_input.dup) do |change, string|
+      prev_input =
+        case prev()
+        when String
+          prev()
+        else
+          prev().input
+        end
+
+      @input = changes.each.with_object(prev_input.dup) do |change, string|
         str, start_loc, end_loc = change
 
         buf = RBS::Buffer.new(name: "", content: string)
@@ -20,10 +33,18 @@ module Parseg
 
       @max_id = 0
 
-      @enumerator = Enumerator.new do |y|
-        tokenizer.each_token(changed_input) do |tok|
-          y << tok
+      @tokens = []
+      tokenizer.each_token(@input) do |tok|
+        if tok
+          @tokens << [next_id, tok]
         end
+      end
+
+      @enumerator = Enumerator.new do |y|
+        @tokens.each do |id, tok|
+          y << [id, tok]
+        end
+        y << nil
       end
 
       advance_token()
@@ -34,10 +55,7 @@ module Parseg
     end
 
     def advance_token
-      if tok = enumerator.next
-        new_id = next_id
-
-        tokens[new_id] = tok
+      if (new_id, tok = enumerator.next)
         @current_id = new_id
         @current_token = tok
 
@@ -84,7 +102,7 @@ module Parseg
     end
 
     def token_range(id)
-      tok = tokens[id] or raise
+      tok = token(id)
       _, start, str = tok
       start...(start + str.size)
     end
@@ -110,15 +128,15 @@ module Parseg
     end
 
     def token(id)
-      raise unless tokens.key?(id)
-      tokens[id] or raise
+      (_, tok = tokens.find {|tok_id, tok| tok_id == id }) or raise
+      tok
     end
 
     def surrounding_changed_range
     first_change, *changes = self.changes()
     return unless first_change
 
-    buf = RBS::Buffer.new(name: "", content: changed_input)
+    buf = RBS::Buffer.new(name: "", content: input)
 
     @surrounding_changed_range ||= begin
         str, start_loc, end_loc = first_change
@@ -157,11 +175,45 @@ module Parseg
     end
 
     def update(changes)
-      TokenFactory.new(tokenizer: tokenizer, input: original_input, changes: self.changes + changes)
+      case self.prev
+      when String
+        TokenFactory.new(tokenizer: tokenizer, prev: self, changes: self.changes + changes)
+      else
+        TokenFactory.new(tokenizer: tokenizer, prev: self.prev, changes: self.changes + changes)
+      end
+
     end
 
-    def reset(string)
-      TokenFactory.new(tokenizer: tokenizer, input: string)
+    def reset()
+      TokenFactory.new(tokenizer: tokenizer, prev: self.input, changes: [])
+    end
+
+    def inserted_tokens
+      tokens.each.with_object({}) do |(id, token), tokens| #$ Hash[Integer, token]
+        if token_changed?(id)
+          tokens[id] = token
+        end
+      end
+    end
+
+    def deleted_tokens
+      case prev
+      when String
+        {}
+      else
+        range =  surrounding_changed_range
+        if range
+          if range.begin == range.end
+
+          else
+            inserteds = inserted_tokens()
+            prefix = tokens.take_while {|id, _| !inserteds.key?(id) }
+            suffix = tokens.size - prefix.size - inserteds.size
+
+            prev.tokens.drop(prefix.size).reverse.drop(suffix).reverse.to_h
+          end
+        end
+      end
     end
   end
 end
