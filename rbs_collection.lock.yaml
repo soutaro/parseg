@@ -2,7 +2,7 @@
 sources:
 - type: git
   name: ruby/gem_rbs_collection
-  revision: 6751bcb8010ea20e2a7838e92264a122e1d42c79
+  revision: 641dae8a456dc964cf7e447b7d994c709c7e5f96
   remote: https://github.com/ruby/gem_rbs_collection.git
   repo_dir: gems
 path: ".gem_rbs_collection"
