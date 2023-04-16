@@ -13,9 +13,9 @@ module Parseg
 
       attr_reader expression: EXPR
 
-      def range: (TokenLocator) -> Range[Integer]?
+      def range: (TokenFactory) -> Range[Integer]?
 
-      def first_range: (TokenLocator) -> Range[Integer]?
+      def first_range: (TokenFactory) -> Range[Integer]?
 
       def each: () { (t) -> void } -> void
               | () -> Enumerator[t, void]
