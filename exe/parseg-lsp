@@ -84,8 +84,8 @@ reader.read do |request|
 
     factory_with_changes = last_result.factory.update(changes)
 
-    STDERR.puts "Running parser with #{factory_with_changes.changes.size} pending changes..."
-    factory_with_changes.input.each_line() do |line|
+    STDERR.puts "Running parser with #{factory_with_changes.incoming_changes.size} pending changes..."
+    factory_with_changes.source.each_line() do |line|
       STDERR.puts "> #{line.chomp}"
     end
 
@@ -111,7 +111,7 @@ reader.read do |request|
 
     start = grammar.non_terminals[rule]
 
-    factory = Parseg::TokenFactory.new(tokenizer: tokenizer, prev: text)
+    factory = Parseg::TokenFactory.new(tokenizer: tokenizer, status: text)
 
     parser = Parseg::Parser.new(grammar: grammar, factory: factory)
     parser.error_tolerant_enabled = error_tolerant_enabled
@@ -127,7 +127,7 @@ reader.read do |request|
   when :"textDocument/documentSymbol"
     uri = request[:params][:textDocument][:uri]
     result = trees[uri]
-    content = result.factory.input
+    content = result.factory.source
     buffer = RBS::Buffer.new(name: uri, content: content)
 
     formatter = Parseg::LspTreeFormatter.new(result.factory, buffer)

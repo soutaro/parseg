@@ -36,7 +36,7 @@ class ParserTest < Minitest::Test
 
     parser = Parseg::Parser.new(
       grammar: Grammar,
-      factory: Parseg::TokenFactory.new(tokenizer: Tokenizer, prev: string)
+      factory: Parseg::TokenFactory.new(tokenizer: Tokenizer, status: string)
     )
 
     yield parser if block_given?

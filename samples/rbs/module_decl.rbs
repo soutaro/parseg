@@ -1,5 +1,4 @@
 module A
-  module B
-  end
+  module Foo
   def foo: () -> void
 end

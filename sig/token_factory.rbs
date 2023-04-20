@@ -6,7 +6,22 @@ module Parseg
   # 1. Standalone mode starts from the fresh input (with empty `#changes`)
   # 2. Incremental mode that knows where the input is changed
   #
+  # TokenFactory can be created with two sets of parameters:
+  #
+  # * Input string, no last status, and no changes
+  # * Last status, that didn't generate a successful sequence of tokens, and changes since the last status
+  #
   class TokenFactory
+    class FactoryStatus
+      attr_reader last_tokens: Array[[Integer, token]]
+
+      attr_reader last_input: String
+
+      attr_reader incoming_changes: Array[change]
+
+      def initialize: (Array[[Integer, token]], String, Array[change]) -> void
+    end
+
     # Pair of 1-origin line number and 0-origin character (current) number
     type position = [Integer, Integer]
 
@@ -14,15 +29,9 @@ module Parseg
 
     attr_reader tokenizer: _Tokenizer
 
-    attr_reader prev: (TokenFactory | String)
-
-    # The input string where `changes` are applied to the input of `#previous_factory`
-    #
-    attr_reader input: String
+    attr_reader status: FactoryStatus | String
 
     attr_reader tokens: Array[[Integer, token]]
-
-    attr_reader changes: Array[change]
 
     attr_reader current_token: token?
 
@@ -35,20 +44,20 @@ module Parseg
     # Returns a fresh token id
     def next_id: () -> Integer
 
-    def initialize: (tokenizer: _Tokenizer, input: String) -> void
-                  | (tokenizer: _Tokenizer, prev: TokenFactory, ?changes: Array[change]) -> void
+    def initialize: (tokenizer: _Tokenizer, status: FactoryStatus | String) -> void
 
     # Returns a new TokenFactory with given changes
-    #
-    # This is for *incremental* mode.
     #
     def update: (Array[change] changes) -> TokenFactory
 
     # Returns a new TokenFactory with pending changes applied
     #
-    # This is for *standalone* mode.
-    #
     def reset: () -> TokenFactory
+
+    # Returns a String with all pending changes, to previous status
+    #
+    def source: () -> String
+    @source: String?
 
     # The range that contains everything in `#changes`
     #
@@ -57,6 +66,8 @@ module Parseg
     def surrounding_changed_range: () -> Range[Integer]?
 
     @surrounding_changed_range: Range[Integer] | Integer | nil
+
+    def incoming_changes: () -> Array[change]
 
     def advance_token: () -> [Integer, token]?
 
@@ -92,10 +103,10 @@ module Parseg
     #
     def token_changed?: (?Integer id) -> bool
 
-    # Tokens that are newly inserted into `tokens` array
+    # Tokens that are newly inserted into current tokens
     def inserted_tokens: () -> Hash[Integer, token]
 
-    # Tokens that are deleted from `prev.tokens` array
+    # Tokens that are deleted from previous tokens
     def deleted_tokens: () -> Hash[Integer, token]
   end
 end
