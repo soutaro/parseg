@@ -17,7 +17,7 @@ module Parseg
       skips = [] #: Array[Integer]
 
       if error_tolerant_enabled
-        tree = push_stack(non_terminal.name) { parse_rule(non_terminal.rule, Set[], skips) }
+        tree = push_stack(non_terminal.name, non_terminal.cut?) { parse_rule(non_terminal.rule, Set[], skips) }
 
         tree = Tree::NonTerminalTree.new(
           Grammar::Expression::NonTerminalSymbol.new(non_terminal),
@@ -67,9 +67,11 @@ module Parseg
 
     def advance_token
       before = factory.token_changed?()
+      before_pos = factory.token_range(factory.current_id!).end
       factory.advance_token()
       after =
         if factory.current_id
+          after_pos = factory.token_range(factory.current_id!).end
           factory.token_changed?()
         else
           before
@@ -81,6 +83,18 @@ module Parseg
       when before && !after
         @leaving_change = true
         STDERR.puts("Leave from changes with `#{factory.current_type}` in #{current_non_terminal_name}")
+      when !before && !after
+        if factory.inserted_tokens.empty? && (first_deleted = factory.deleted_tokens.first)
+          if after_pos
+            if before_pos < first_deleted[1][1]
+              if after_pos > first_deleted[1][1] + first_deleted[1][2].size
+                STDERR.puts("Leave from changes with `#{factory.current_type}` in #{current_non_terminal_name}")
+                consuming_changed_token()
+                @leaving_change = true
+              end
+            end
+          end
+        end
       end
     end
 
@@ -94,22 +108,26 @@ module Parseg
       @parsing_changes_stack.last&.[](1) || false
     end
 
-    def push_stack(name)
-      @parsing_changes_stack.push(
-        [
-          name,
-          parsing_change?
-        ]
-      )
+    def push_stack(name, cut)
+      if cut
+        @parsing_changes_stack.push(
+          [
+            name,
+            parsing_change?
+          ]
+        )
+      end
       yield
     ensure
-      @parsing_changes_stack.pop()
+      if cut
+        @parsing_changes_stack.pop()
+      end
     end
 
     def entered_to_changed?
-      *_, prev, _last = @parsing_changes_stack
+      *_, prev, last = @parsing_changes_stack
 
-      if prev && _last
+      if prev && last
         !prev[1] && parsing_change?
       else
         false
@@ -187,7 +205,7 @@ module Parseg
           end
 
         when Grammar::Expression::NonTerminalSymbol
-          push_stack(expr.non_terminal.name) do
+          push_stack(expr.non_terminal.name, expr.non_terminal.cut?) do
             first_tokens = expr.non_terminal.rule.first_tokens
 
             if current_token_included_in?(first_tokens)
@@ -198,7 +216,10 @@ module Parseg
               )
 
               if @leaving_change && entered_to_changed?
-                @leaving_change = false
+                STDERR.puts "leaved change from #{expr.non_terminal.name}"
+                if expr.non_terminal.cut?
+                  @leaving_change = false
+                end
               end
 
               if expr.next_expr

@@ -127,6 +127,11 @@ module Parseg
       def initialize: (Symbol) -> void
 
       %a{pure} def closing_token: () -> Expression::TokenSymbol?
+
+      def cut?: () -> bool
+      @cut: bool
+
+      def cut!: () -> self
     end
 
     interface _WithGrammar

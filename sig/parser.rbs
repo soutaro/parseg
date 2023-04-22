@@ -27,11 +27,11 @@ module Parseg
     # Returns true if current_token is changed
     def parsing_change?: () -> bool
 
-    def push_stack: [A] (Symbol) { () -> A } -> A
+    def push_stack: [A] (Symbol, bool cut) { () -> A } -> A
 
     def current_non_terminal_name: () -> Symbol?
 
-    # Enterred to change during parsing current *non terminal* symbol
+    # Enterred to change during parsing current *cutting* non terminal symbol
     def entered_to_changed?: () -> bool
 
     # Set `entered_to_changed?` to true

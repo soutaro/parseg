@@ -57,6 +57,7 @@ module Parseg
       def initialize(name)
         @name = name
         @rule = Expression::Empty.instance
+        @cut = false
       end
 
       def closing_token
@@ -69,6 +70,15 @@ module Parseg
             return last_expr
           end
         end
+      end
+
+      def cut?
+        @cut
+      end
+
+      def cut!
+        @cut = true
+        self
       end
     end
 
