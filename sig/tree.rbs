@@ -15,6 +15,13 @@ module Parseg
 
       def range: (TokenFactory) -> Range[Integer]?
 
+      # Range of token id
+      def token_range: () -> Range[Integer]?
+
+      def first_token: () -> Integer?
+
+      def last_token: () -> Integer?
+
       def first_range: (TokenFactory) -> Range[Integer]?
 
       def each: () { (t) -> void } -> void

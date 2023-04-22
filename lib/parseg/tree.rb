@@ -19,6 +19,33 @@ module Parseg
         end
       end
 
+      def token_range
+        first_token = nil #: Integer?
+        last_token = nil #: Integer?
+
+        each do |tree|
+          # @type break: nil
+          if ft = tree.first_token
+            first_token = ft
+            break
+          end
+        end
+
+        each.reverse_each do |tree|
+          # @type break: nil
+          if lt = tree.last_token
+            last_token = lt
+            break
+          end
+        end
+
+        if first_token || last_token
+          start_token = first_token || last_token #: Integer
+          end_token = last_token || first_token #: Integer
+          start_token..end_token
+        end
+      end
+
       def each(&block)
         if block
           yield(_ = self)
@@ -67,6 +94,14 @@ module Parseg
       def first_range(locator)
         locator.token_range(token_id)
       end
+
+      def first_token
+        token_id
+      end
+
+      def last_token
+        token_id
+      end
     end
 
     class NonTerminalTree < Base
@@ -82,6 +117,14 @@ module Parseg
         if value
           value.first_range(locator)
         end
+      end
+
+      def first_token
+        value&.first_token
+      end
+
+      def last_token
+        value&.last_token
       end
 
       def error_trees(errors)
@@ -101,6 +144,12 @@ module Parseg
 
       def first_range(locator)
         nil
+      end
+
+      def first_token
+      end
+
+      def last_token
       end
     end
 
@@ -123,6 +172,14 @@ module Parseg
         end
 
         super(errors)
+      end
+
+      def first_token
+        value.first_token
+      end
+
+      def last_token
+        value.last_token
       end
     end
 
@@ -171,6 +228,18 @@ module Parseg
 
         super(errors)
       end
+
+      def first_token
+        if first = values.first
+          first.first_token
+        end
+      end
+
+      def last_token
+        if last = values.last
+          last.last_token
+        end
+      end
     end
 
     class OptionalTree < Base
@@ -195,6 +264,14 @@ module Parseg
 
         super(errors)
       end
+
+      def first_token
+        value&.first_token
+      end
+
+      def last_token
+        value&.last_token
+      end
     end
 
     class MissingTree < Base
@@ -215,6 +292,12 @@ module Parseg
       def error_trees(errors)
         errors << self
         super(errors)
+      end
+
+      def first_token
+      end
+
+      def last_token
       end
     end
   end
