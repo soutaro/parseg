@@ -40,7 +40,7 @@ tokenizer, grammar = eval(File.read(file), __skip__ = empty_binding, file)
 writer = LSP::Transport::Stdio::Writer.new
 reader = LSP::Transport::Stdio::Reader.new
 
-trees = {} #: Hash[String, Parseg::Result]
+trees = {} #: Hash[String, [Parseg::Result, Parseg::Result?]]
 
 STDERR.puts "Starting loop..."
 
@@ -80,7 +80,7 @@ reader.read do |request|
         [end_line, end_column]
       ]
     end
-    last_result = trees[uri]
+    last_result, last_successful_result = trees[uri]
 
     factory_with_changes = last_result.factory.update(changes)
 
@@ -99,14 +99,16 @@ reader.read do |request|
       deleted_tokens = factory_with_changes.deleted_tokens
       STDERR.puts "#{deleted_tokens.size} tokens are deleted"
 
-      if factory_with_changes.inserted_tokens.empty? && !deleted_tokens.empty?
-        tree_changed_factory = result.factory
-        deleted_tokens.each_key do |token_id|
-          if range = last_result.tree_range_for_deleted_token(token_id)
-            tree_changed_factory = tree_changed_factory.with_additional_change(range)
+      if last_successful_result
+        if factory_with_changes.inserted_tokens.empty? && !deleted_tokens.empty?
+          tree_changed_factory = last_successful_result.factory
+          deleted_tokens.each_key do |token_id|
+            if range = last_successful_result.tree_range_for_deleted_token(token_id)
+              tree_changed_factory = tree_changed_factory.with_additional_change(range)
+            end
           end
+          factory_with_changes = tree_changed_factory.update(factory_with_changes.incoming_changes)
         end
-        factory_with_changes = tree_changed_factory.update(changes)
       end
 
       result = Parseg::Parser.new(grammar: grammar, factory: factory_with_changes).yield_self do |parser|
@@ -114,9 +116,11 @@ reader.read do |request|
         parser.skip_unknown_tokens_enabled = skip_tokens_enabled
         parser.parse(grammar.non_terminals[rule])
       end
+    else
+      last_successful_result = result
     end
 
-    trees[uri] = result
+    trees[uri] = [result, last_successful_result]
 
   when :"textDocument/didOpen"
     uri = request[:params][:textDocument][:uri]
@@ -131,7 +135,10 @@ reader.read do |request|
     parser.skip_unknown_tokens_enabled = skip_tokens_enabled
     result = parser.parse(start)
 
-    trees[uri] = result
+    unless result.has_error?
+      successful_result = result
+    end
+    trees[uri] = [result, successful_result]
 
   when :"textDocument/didClose"
     uri = request[:params][:textDocument][:uri]
@@ -139,7 +146,7 @@ reader.read do |request|
 
   when :"textDocument/documentSymbol"
     uri = request[:params][:textDocument][:uri]
-    result = trees[uri]
+    result, _ = trees[uri]
     content = result.factory.source
     buffer = RBS::Buffer.new(name: uri, content: content)
 
