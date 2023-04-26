@@ -128,10 +128,10 @@ module Parseg
 
       %a{pure} def closing_token: () -> Expression::TokenSymbol?
 
-      def cut?: () -> bool
-      @cut: bool
+      def block?: () -> bool
+      @block: bool
 
-      def cut!: () -> self
+      def block!: () -> self
     end
 
     interface _WithGrammar

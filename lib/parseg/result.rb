@@ -90,7 +90,7 @@ module Parseg
               end
             end
 
-            if tree.is_a?(Tree::NonTerminalTree) && tree.expression.non_terminal.cut?
+            if tree.is_a?(Tree::NonTerminalTree) && tree.expression.non_terminal.block?
               return factory.token_range(first_token).begin...factory.token_range(token).begin
             end
           end

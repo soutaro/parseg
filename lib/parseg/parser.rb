@@ -17,7 +17,7 @@ module Parseg
       skips = [] #: Array[Integer]
 
       if error_tolerant_enabled
-        tree = push_stack(non_terminal.name, non_terminal.cut?) { parse_rule(non_terminal.rule, Set[], skips) }
+        tree = push_stack(non_terminal.name, non_terminal.block?) { parse_rule(non_terminal.rule, Set[], skips) }
 
         tree = Tree::NonTerminalTree.new(
           Grammar::Expression::NonTerminalSymbol.new(non_terminal),
@@ -197,7 +197,7 @@ module Parseg
 
       when Grammar::Expression::NonTerminalSymbol
         Parseg.logger.tagged("[#{expr.non_terminal.name}]") do
-          push_stack(expr.non_terminal.name, expr.non_terminal.cut?) do
+          push_stack(expr.non_terminal.name, expr.non_terminal.block?) do
             first_tokens = expr.non_terminal.rule.first_tokens
 
             if current_token_included_in?(first_tokens)
@@ -207,7 +207,7 @@ module Parseg
                 skip_tokens
               )
 
-              if expr.non_terminal.cut?
+              if expr.non_terminal.block?
                 if leaving_change? && entered_to_changed?
                   finish_leave
                 end

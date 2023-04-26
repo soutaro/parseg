@@ -189,7 +189,7 @@ grammar = Parseg::Grammar.new() do |grammar|
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + Alt(*list)
   }
 
-  grammar[:module_decl].cut!.rule =
+  grammar[:module_decl].block!.rule =
     T(:kMODULE) + NT(:module_name) + Alt(
       NT(:module_alias_rhs),
       Opt(NT(:type_params)) + NT(:module_decl_rhs)
