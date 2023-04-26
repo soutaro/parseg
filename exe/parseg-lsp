@@ -156,7 +156,7 @@ reader.read do |request|
     diagnostics = [] #: Array[LanguageServer::Protocol::Interface::Diagnostic]
 
     result.skip_tokens.each do |token_id|
-      _, type, offset, value = result.factory.token(token_id)
+      type, offset, value = result.factory.token(token_id)
 
       range = result.factory.token_range(token_id)
       start_line, start_column = buffer.pos_to_loc(range.begin)
@@ -168,7 +168,7 @@ reader.read do |request|
           end: { line: end_line - 1, character: end_column }
         },
         severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::WARNING,
-        message: "Token skipped: #{type}, #{value}"
+        message: "Token skipped: type=#{type} (`#{value}`)"
       )
     end
 
@@ -202,13 +202,23 @@ reader.read do |request|
         start_line, start_column = buffer.pos_to_loc(range.begin)
         end_line, end_column = buffer.pos_to_loc(range.end)
 
+        expr =
+          case error.expression
+          when Parseg::Grammar::Expression::TokenSymbol
+            "T(:#{error.expression.token})"
+          when Parseg::Grammar::Expression::NonTerminalSymbol
+            "NT(:#{error.expression.non_terminal.name})"
+          else
+            "(#{error.expression.class.name})"
+          end
+
         diagnostic = LanguageServer::Protocol::Interface::Diagnostic.new(
           range: {
             start: { line: start_line - 1, character: start_column },
             end: { line: end_line - 1, character: end_column }
           },
           severity: LanguageServer::Protocol::Constant::DiagnosticSeverity::ERROR,
-          message: "Unexpected token: #{type}, #{value}, expected tokens: #{error.expression.first_tokens}"
+          message: "Unexpected token: type=#{type}, value=#{value}, expected tokens by #{expr}: #{error.expression.first_tokens}"
         )
 
         diagnostics << diagnostic
