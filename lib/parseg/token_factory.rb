@@ -245,7 +245,12 @@ module Parseg
 
         last_tokens = status.last_tokens
         last_tokens = last_tokens.drop(prefix.size)
-        last_tokens = last_tokens.take(last_tokens.size - suffix.size)
+        size = last_tokens.size - suffix.size
+        if size > 0
+          last_tokens = last_tokens.take(size)
+        else
+          last_tokens.clear
+        end
 
         last_tokens.to_h
       end
