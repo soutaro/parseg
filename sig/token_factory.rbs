@@ -44,7 +44,7 @@ module Parseg
     # Returns a fresh token id
     def next_id: () -> Integer
 
-    def initialize: (tokenizer: _Tokenizer, status: FactoryStatus) -> void
+    def initialize: (tokenizer: _Tokenizer, status: FactoryStatus | String) -> void
 
     # Returns a new TokenFactory with given changes
     #
