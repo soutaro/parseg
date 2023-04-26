@@ -2,17 +2,21 @@
 sources:
 - type: git
   name: ruby/gem_rbs_collection
-  revision: 641dae8a456dc964cf7e447b7d994c709c7e5f96
+  revision: 34275028974d6352fe7666a6e833def7a6efb4a5
   remote: https://github.com/ruby/gem_rbs_collection.git
   repo_dir: gems
 path: ".gem_rbs_collection"
 gems:
+- name: abbrev
+  version: '0'
+  source:
+    type: stdlib
 - name: activesupport
   version: '7.0'
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 82e5c50fd20bdfb467b5890017a68ce6f4ee5e2b
+    revision: 34275028974d6352fe7666a6e833def7a6efb4a5
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: concurrent-ruby
@@ -20,10 +24,14 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 82e5c50fd20bdfb467b5890017a68ce6f4ee5e2b
+    revision: 34275028974d6352fe7666a6e833def7a6efb4a5
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: date
+  version: '0'
+  source:
+    type: stdlib
+- name: dbm
   version: '0'
   source:
     type: stdlib
@@ -32,7 +40,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 82e5c50fd20bdfb467b5890017a68ce6f4ee5e2b
+    revision: 34275028974d6352fe7666a6e833def7a6efb4a5
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: json
@@ -63,8 +71,12 @@ gems:
   version: '0'
   source:
     type: stdlib
+- name: pstore
+  version: '0'
+  source:
+    type: stdlib
 - name: rbs
-  version: 3.0.4
+  version: 3.1.0
   source:
     type: rubygems
 - name: rdoc
@@ -88,6 +100,10 @@ gems:
   source:
     type: stdlib
 - name: tsort
+  version: '0'
+  source:
+    type: stdlib
+- name: yaml
   version: '0'
   source:
     type: stdlib

@@ -9,5 +9,5 @@ gem "rake", "~> 13.0"
 
 gem "minitest", "~> 5.0"
 
-gem "steep", "~> 1.4.0.dev", require: false
-gem "rbs", "~> 3.0.0"
+gem "steep", require: false
+gem "rbs"
