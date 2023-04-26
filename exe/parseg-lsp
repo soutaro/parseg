@@ -96,6 +96,19 @@ reader.read do |request|
     end
 
     if result.has_error?
+      deleted_tokens = factory_with_changes.deleted_tokens
+      STDERR.puts "#{deleted_tokens.size} tokens are deleted"
+
+      if factory_with_changes.inserted_tokens.empty? && !deleted_tokens.empty?
+        tree_changed_factory = result.factory
+        deleted_tokens.each_key do |token_id|
+          if range = last_result.tree_range_for_deleted_token(token_id)
+            tree_changed_factory = tree_changed_factory.with_additional_change(range)
+          end
+        end
+        factory_with_changes = tree_changed_factory.update(changes)
+      end
+
       result = Parseg::Parser.new(grammar: grammar, factory: factory_with_changes).yield_self do |parser|
         parser.error_tolerant_enabled = error_tolerant_enabled
         parser.skip_unknown_tokens_enabled = skip_tokens_enabled

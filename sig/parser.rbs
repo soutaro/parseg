@@ -20,9 +20,13 @@ module Parseg
 
     def parse: (Grammar::NonTerminal) -> Result
 
-    @parsing_changes_stack: Array[[Symbol, bool]]
-
-    @leaving_change: bool
+    # Parsing-changes status
+    #
+    # * The name of the *cut* non-terminal symbol
+    # * If the *current* token is changed at the beginning of the symbol
+    # * If the
+    #
+    @parsing_changes_stack: Array[[Symbol, bool, bool]]
 
     # Returns true if current_token is changed
     def parsing_change?: () -> bool
@@ -33,6 +37,11 @@ module Parseg
 
     # Enterred to change during parsing current *cutting* non terminal symbol
     def entered_to_changed?: () -> bool
+
+    @leaving_change: bool
+    def leaving_change?: () -> bool
+
+    def finish_leave: () -> void
 
     # Set `entered_to_changed?` to true
     def consuming_changed_token: () -> void

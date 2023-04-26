@@ -79,23 +79,19 @@ module Parseg
 
       case
       when !before && after
-        STDERR.puts("Enter into changes with `#{factory.current_type}` in #{current_non_terminal_name}")
+        STDERR.puts("Enter into changes with `#{factory.current_type}` in #{current_non_terminal_name}@#{@parsing_changes_stack.size}")
       when before && !after
         @leaving_change = true
-        STDERR.puts("Leave from changes with `#{factory.current_type}` in #{current_non_terminal_name}")
-      when !before && !after
-        if factory.inserted_tokens.empty? && (first_deleted = factory.deleted_tokens.first)
-          if after_pos
-            if before_pos < first_deleted[1][1]
-              if after_pos > first_deleted[1][1] + first_deleted[1][2].size
-                STDERR.puts("Leave from changes with `#{factory.current_type}` in #{current_non_terminal_name}")
-                consuming_changed_token()
-                @leaving_change = true
-              end
-            end
-          end
-        end
+        STDERR.puts("Leave from changes with `#{factory.current_type}`(#{factory.current_token![2]}) in #{current_non_terminal_name}@#{@parsing_changes_stack.size}")
       end
+    end
+
+    def leaving_change?
+      @leaving_change
+    end
+
+    def finish_leave
+      @leaving_change = false
     end
 
     def current_non_terminal_name
@@ -105,7 +101,7 @@ module Parseg
     end
 
     def parsing_change?
-      @parsing_changes_stack.last&.[](1) || false
+      factory.token_changed?
     end
 
     def push_stack(name, cut)
@@ -113,7 +109,8 @@ module Parseg
         @parsing_changes_stack.push(
           [
             name,
-            parsing_change?
+            parsing_change?,
+            false
           ]
         )
       end
@@ -125,18 +122,25 @@ module Parseg
     end
 
     def entered_to_changed?
-      *_, prev, last = @parsing_changes_stack
+      *_, prev, current = @parsing_changes_stack
 
-      if prev && last
-        !prev[1] && parsing_change?
+      if prev && current
+        if current[1]
+          !prev[1] && !prev[2]
+        else
+          current[2]
+        end
       else
         false
       end
     end
 
     def consuming_changed_token
-      if last = @parsing_changes_stack.last
-        last[1] = true
+      *_, current = @parsing_changes_stack
+      if current
+        unless current[2]
+          current[2] = true
+        end
       end
     end
 
@@ -180,9 +184,7 @@ module Parseg
         when Grammar::Expression::TokenSymbol
           if current_token_equals?(expr.token)
             id = current_token_id!
-            if factory.token_changed?()
-              consuming_changed_token()
-            end
+            consuming_changed_token if current_token_id && factory.token_changed?
             advance_token()
 
             if expr.next_expr
@@ -215,10 +217,9 @@ module Parseg
                 skip_tokens
               )
 
-              if @leaving_change && entered_to_changed?
-                STDERR.puts "leaved change from #{expr.non_terminal.name}"
-                if expr.non_terminal.cut?
-                  @leaving_change = false
+              if expr.non_terminal.cut?
+                if leaving_change? && entered_to_changed?
+                  finish_leave
                 end
               end
 

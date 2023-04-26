@@ -120,11 +120,11 @@ module Parseg
       end
 
       def first_token
-        value&.first_token
+        value&.token_range&.begin
       end
 
       def last_token
-        value&.last_token
+        value&.token_range&.end
       end
 
       def error_trees(errors)
@@ -175,11 +175,11 @@ module Parseg
       end
 
       def first_token
-        value.first_token
+        value.token_range&.begin
       end
 
       def last_token
-        value.last_token
+        value.token_range&.end
       end
     end
 
@@ -231,13 +231,13 @@ module Parseg
 
       def first_token
         if first = values.first
-          first.first_token
+          first.token_range&.begin
         end
       end
 
       def last_token
         if last = values.last
-          last.last_token
+          last.token_range&.end
         end
       end
     end
@@ -266,11 +266,11 @@ module Parseg
       end
 
       def first_token
-        value&.first_token
+        value&.token_range&.begin
       end
 
       def last_token
-        value&.last_token
+        value&.token_range&.end
       end
     end
 

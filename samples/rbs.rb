@@ -94,7 +94,7 @@ tokenizer = define_tokenizer(
   tGIDENT: /\$[a-zA-Z]\w*/
 )
 
-grammar = Grammar.new() do |grammar|
+grammar = Parseg::Grammar.new() do |grammar|
   grammar[:simple_type].rule = Alt(
     T(:kLPAREN) + NT(:type) + T(:kRPAREN),
     NT(:base_type),

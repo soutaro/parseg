@@ -1,4 +1,5 @@
 module A
   module Foo
-  def foo: () -> void
+  end
+  alias foo bar
 end

@@ -44,7 +44,7 @@ module Parseg
     # Returns a fresh token id
     def next_id: () -> Integer
 
-    def initialize: (tokenizer: _Tokenizer, status: FactoryStatus | String) -> void
+    def initialize: (tokenizer: _Tokenizer, status: FactoryStatus) -> void
 
     # Returns a new TokenFactory with given changes
     #
@@ -108,5 +108,8 @@ module Parseg
 
     # Tokens that are deleted from previous tokens
     def deleted_tokens: () -> Hash[Integer, token]
+
+    # Add new `change` to `self` with given range
+    def with_additional_change: (Range[Integer]) -> TokenFactory
   end
 end

@@ -61,5 +61,43 @@ module Parseg
     def has_error?
       tree.error_tree? ? true : !skip_tokens.empty?
     end
+
+    def tree_range_for_deleted_token(token, tree = self.tree)
+      tree.each do |tree|
+        first_token = tree.first_token
+        last_token = tree.last_token
+
+        if first_token && last_token
+          if first_token <= token && token <= last_token
+            case tree
+            when Tree::NonTerminalTree
+              sub_trees = [tree.value] if tree.value
+            when Tree::AlternationTree
+              sub_trees = [tree.value]
+            when Tree::OptionalTree
+              sub_trees = [tree.value] if tree.value
+            when Tree::RepeatTree
+              sub_trees = tree.values
+            when Tree::TokenTree, Tree::EmptyTree, Tree::MissingTree
+              # nop
+            end
+
+            if sub_trees
+              sub_trees.each do |sub|
+                if range = tree_range_for_deleted_token(token, sub)
+                  return range
+                end
+              end
+            end
+
+            if tree.is_a?(Tree::NonTerminalTree) && tree.expression.non_terminal.cut?
+              return factory.token_range(first_token).begin...factory.token_range(token).begin
+            end
+          end
+        end
+      end
+
+      nil
+    end
   end
 end

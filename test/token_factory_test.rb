@@ -4,7 +4,8 @@ class TokenFactoryTest < Minitest::Test
   Tokenizer = Parseg::StrscanTokenizer.new(
     {
       INTEGER: /\d+/,
-      IDENT: /[a-z]\w*/
+      IDENT: /[a-z]\w*/,
+      UIDENT: /[A-Z]\w*/
     },
     /(\s+)|(#[^\n]*)/
   )
@@ -79,5 +80,34 @@ class TokenFactoryTest < Minitest::Test
       { 2 => [:INTEGER, 2, "2"] },
       changed.deleted_tokens
     )
+  end
+
+  def test_surrounding_changed_range
+    original = Parseg::TokenFactory.new(tokenizer: Tokenizer, status: <<~TEXT)
+      module Foo
+        module Bar
+        end
+      end
+    TEXT
+
+    changed = original.update(
+      [
+        ["module Bar\n  ", [2, 2], [3, 2]],
+        ["", [3, 0], [3, 5]],
+      ]
+    )
+
+    assert_equal <<~RBS, changed.source
+      module Foo
+        module Bar
+
+      end
+    RBS
+
+    changed.surrounding_changed_range.tap do |range|
+      buf = RBS::Buffer.new(name: "", content: changed.source)
+      assert_equal [2, 2], buf.pos_to_loc(range.begin)
+      assert_equal [3, 0], buf.pos_to_loc(range.end)
+    end
   end
 end

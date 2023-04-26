@@ -19,11 +19,17 @@ module TreeAssertion
           [type, value]
         ]
       when Parseg::Tree::NonTerminalTree
-        [
+        if tree.value
+          [
+            {
+              tree.expression.non_terminal.name => translate(tree.value, factory: factory)
+            }
+          ]
+        else
           {
-            tree.expression.non_terminal.name => translate(tree.value, factory: factory)
+            tree.expression.non_terminal.name => []
           }
-        ]
+        end
       when Parseg::Tree::EmptyTree
         []
       when Parseg::Tree::AlternationTree

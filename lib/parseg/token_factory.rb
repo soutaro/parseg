@@ -113,7 +113,7 @@ module Parseg
     def surrounding_changed_range
       @surrounding_changed_range ||= begin
         changes = incoming_changes.dup
-        
+
         return if changes.empty?
 
         buf = RBS::Buffer.new(name: "", content: source)
@@ -125,14 +125,26 @@ module Parseg
 
         changes.each do |(str, start_loc, end_loc)|
           be = buf.loc_to_pos(start_loc)
+          en = buf.loc_to_pos(end_loc)
           changed = be...(be + str.size)
+
+          range_size = en - be
 
           if surrounding_begin > changed.begin
             surrounding_begin  = changed.begin
           end
 
-          if surrounding_end < changed.end
-            surrounding_end = changed.end
+          case
+          when range_size < str.size
+            # inserted
+            if surrounding_end < changed.end
+              surrounding_end = changed.end
+            end
+          when range_size > str.size
+            # deleted
+            if be <= surrounding_end && surrounding_end <= en
+              surrounding_end = changed.end
+            end
           end
         end
 
@@ -237,6 +249,18 @@ module Parseg
 
         last_tokens.to_h
       end
+    end
+
+    def with_additional_change(range)
+      string = source[range.begin...range.end] or raise
+      buf = RBS::Buffer.new(name: "", content: source)
+      change = [
+        string,
+        buf.pos_to_loc(range.begin),
+        buf.pos_to_loc(range.end)
+      ]  #: change
+
+      update([change])
     end
   end
 end

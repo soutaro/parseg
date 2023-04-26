@@ -14,6 +14,9 @@ module Parseg
     def each_tree: (?Tree::t) { (Tree::t) -> void } -> void
                  | () -> Enumerator[Tree::t, void]
 
+    # Returns a range of cursor positions that spans the inner most *cut* tree that includes `deleted_token`
+    def tree_range_for_deleted_token: (Integer deleted_token, ?Tree::t) -> Range[Integer]?
+
     def has_error?: () -> bool
   end
 end
