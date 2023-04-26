@@ -20,7 +20,10 @@ def define_tokenizer(**defn)
         end
       end
 
-      block.call nil if failed
+      if failed
+        string = scan.scan(/[^\s]+/)
+        block.call [:UNKNOWN, scan.charpos - string.size, string]
+      end
     end
 
     block.call nil
