@@ -59,6 +59,7 @@ tokenizer = define_tokenizer(
   kSINGLETON: /singleton/,
   kBOOL: /bool/,
   kDEF: /def/,
+  kINTERFACE: /interface/,
   kUNCHECKED: /unchecked/,
   kINCLUDE: /include/,
   kEXTEND: /extend/,
@@ -189,6 +190,8 @@ grammar = Parseg::Grammar.new() do |grammar|
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + Alt(*list)
   }
 
+  grammar[:interface_name].rule = type_names[module_name: false, alias_name: false]
+
   grammar[:module_decl].block!.rule =
     T(:kMODULE) + NT(:module_name) + Alt(
       NT(:module_alias_rhs),
@@ -225,6 +228,15 @@ grammar = Parseg::Grammar.new() do |grammar|
       T(:tLKEYWORD),
       T(:tULKEYWORD),
     ) + NT(:method_types)
+
+  grammar[:instance_method_definition].rule =
+    T(:kDEF) + Alt(
+      NT(:method_name) + T(:kCOLON),
+      T(:tUKEYWORD),
+      T(:tLKEYWORD),
+      T(:tULKEYWORD),
+    ) + NT(:method_types)
+
 
   grammar[:method_name].rule = T(:tLIDENT)
 
@@ -272,6 +284,7 @@ grammar = Parseg::Grammar.new() do |grammar|
     Repeat(
       Alt(
         NT(:module_decl),
+        NT(:interface_decl),
         NT(:constant_decl),
         NT(:ivar_member),
         NT(:self_ivar_member),
@@ -284,6 +297,17 @@ grammar = Parseg::Grammar.new() do |grammar|
         NT(:attr_reader),
         NT(:attr_writer),
         NT(:attr_accessor)
+      )
+    )
+  )
+
+  grammar[:interface_decl].block!.rule = T(:kINTERFACE) + NT(:interface_name) + Opt(NT(:type_params)) + NT(:interface_members) + T(:kEND)
+
+  grammar[:interface_members].rule = Opt(
+    Repeat(
+      Alt(
+        NT(:instance_method_definition),
+        NT(:include_interface)
       )
     )
   )
@@ -304,6 +328,7 @@ grammar = Parseg::Grammar.new() do |grammar|
       Repeat(
         Alt(
           NT(:module_decl),
+          NT(:interface_decl),
           NT(:global_decl),
           NT(:type_alias_decl),
           NT(:constant_decl)
