@@ -166,8 +166,15 @@ module Parseg
 
       case sr = surrounding_changed_range
       when Range
-        return false if range.end < sr.begin
-        return false if range.begin > sr.end
+        Parseg.logger.debug {
+          {
+            token: token_type(id),
+            surrounding_range: sr,
+            token_range: range
+          }.inspect
+        }
+        return false if range.end <= sr.begin
+        return false if range.begin >= sr.end
         true
       when nil
         false
