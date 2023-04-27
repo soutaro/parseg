@@ -1,0 +1,33 @@
+module Parseg
+  class ParsingSession
+    attr_reader tokenizer: _Tokenizer
+
+    attr_reader grammar: Grammar
+
+    attr_accessor error_tolerant_enabled: bool
+
+    attr_accessor skip_unknown_tokens_enabled: bool
+
+    attr_accessor change_based_error_recovery_enabled: bool
+
+    attr_reader last_successful_result: Result?
+
+    attr_reader start: Symbol
+
+    def start_symbol: () -> Grammar::NonTerminal
+
+    def initialize: (tokenizer: _Tokenizer, grammar: Grammar, start: Symbol) -> void
+
+    def update: (Array[TokenFactory::change]) -> Result
+
+    @last_result: Result?
+
+    # Returns the last parsing result or raise an error
+    def last_result: () -> Result
+
+    # Returns the last parsing result or `nil`
+    def last_result?: () -> Result?
+
+    def last_source: () -> String
+  end
+end

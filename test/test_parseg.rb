@@ -41,7 +41,19 @@ class TestParseg < Minitest::Test
   end
 
   def test_parsing_rbs_add
-    result = parse(<<~RBS)
+    session = Parseg::ParsingSession.new(grammar: Grammar, tokenizer: Tokenizer, start: :start)
+    session.error_tolerant_enabled = true
+    session.skip_unknown_tokens_enabled = true
+    session.change_based_error_recovery_enabled = true
+
+    result = session.update([[<<~RBS, [1, 0], [1, 0]]])
+      module Foo
+
+        alias foo bar
+      end
+    RBS
+
+    assert_equal <<~RBS, session.last_source
       module Foo
 
         alias foo bar
@@ -91,23 +103,15 @@ class TestParseg < Minitest::Test
       factory: result.factory
     )
 
-    result = parse_changes(
-      result,
-      changes: [
-        [
-          "  module Bar",
-          [2, 0],
-          [2, 0]
-        ]
-      ]
-    ) do |source|
-      assert_equal <<~RBS, source
-        module Foo
-          module Bar
-          alias foo bar
-        end
-      RBS
-    end
+    result = session.update([
+      ["  module Bar", [2, 0], [2, 0]]
+    ])
+    assert_equal <<~RBS, session.last_source
+      module Foo
+        module Bar
+        alias foo bar
+      end
+    RBS
 
     assert_tree(
       result.tree,
@@ -165,14 +169,21 @@ class TestParseg < Minitest::Test
   end
 
   def test_parsing_rbs_add2
-    result = parse(<<~RBS)
-      module Foo
-        module Bar
+    session = Parseg::ParsingSession.new(grammar: Grammar, tokenizer: Tokenizer, start: :start)
+    session.error_tolerant_enabled = true
+    session.skip_unknown_tokens_enabled = true
+    session.change_based_error_recovery_enabled = true
 
+    result = session.update([
+      [<<~RBS, [1, 0], [1, 0]]
+        module Foo
+          module Bar
+
+          end
+          alias foo bar
         end
-        alias foo bar
-      end
-    RBS
+      RBS
+    ])
 
     assert_tree(
       result.tree,
@@ -235,25 +246,20 @@ class TestParseg < Minitest::Test
       factory: result.factory
     )
 
-    result = parse_changes(
-      result,
-      changes: [
-        [
-          "    alias hello",
-          [3, 0],
-          [3, 0]
-        ]
+    result = session.update(
+      [
+        ["    alias hello", [3, 0], [3, 0]]
       ]
-    ) do |source|
-      assert_equal <<~RBS, source
-        module Foo
-          module Bar
-            alias hello
-          end
-          alias foo bar
+    )
+
+    assert_equal <<~RBS, session.last_source
+      module Foo
+        module Bar
+          alias hello
         end
-      RBS
-    end
+        alias foo bar
+      end
+    RBS
 
     assert_tree(
       result.tree,
@@ -330,16 +336,23 @@ class TestParseg < Minitest::Test
   end
 
   def test_parsing_rbs_delete
-    result = parse(<<~RBS)
-      module Foo
-        module Bar
-          module Baz
-          end
-        end
+    session = Parseg::ParsingSession.new(grammar: Grammar, tokenizer: Tokenizer, start: :start)
+    session.error_tolerant_enabled = true
+    session.skip_unknown_tokens_enabled = true
+    session.change_based_error_recovery_enabled = true
 
-        alias foo bar
-      end
-    RBS
+    result = session.update([
+      [<<~RBS, [1, 0], [1, 0]]
+        module Foo
+          module Bar
+            module Baz
+            end
+          end
+
+          alias foo bar
+        end
+      RBS
+    ])
 
     assert_tree(
       result.tree,
@@ -421,97 +434,96 @@ class TestParseg < Minitest::Test
       factory: result.factory
     )
 
-    result = parse_changes(
-      result,
-      changes: [
+    result = session.update(
+      [
         [
           "",
           [4, 0],
           [6, 0]
         ]
       ]
-    ) do |source|
-      assert_equal <<~RBS, source
-        module Foo
-          module Bar
-            module Baz
+    )
 
-          alias foo bar
-        end
-      RBS
-    end
+    assert_equal <<~RBS, session.last_source
+      module Foo
+        module Bar
+          module Baz
 
-assert_tree(
-  result.tree,
-  {
-    start: [
+        alias foo bar
+      end
+    RBS
+
+    assert_tree(
+      result.tree,
       {
-        module_decl: [
-          [:kMODULE, "module"],
+        start: [
           {
-            module_name: [
-              [:tUIDENT, "Foo"]
-            ]
-          },
-          {
-            module_decl_rhs: [
+            module_decl: [
+              [:kMODULE, "module"],
               {
-                module_members: [
+                module_name: [
+                  [:tUIDENT, "Foo"]
+                ]
+              },
+              {
+                module_decl_rhs: [
                   {
-                    module_decl: [
-                      [:kMODULE, "module"],
+                    module_members: [
                       {
-                        module_name: [
-                          [:tUIDENT, "Bar"]
+                        module_decl: [
+                          [:kMODULE, "module"],
+                          {
+                            module_name: [
+                              [:tUIDENT, "Bar"]
+                            ]
+                          },
+                          {
+                            module_decl_rhs: [
+                              {
+                                module_members: [
+                                  {
+                                    module_decl: [
+                                      [:kMODULE, "module"],
+                                      {
+                                        module_name: [
+                                          [:tUIDENT, "Baz"]
+                                        ]
+                                      },
+                                      {:unexpected=>:kALIAS}
+                                    ]
+                                  }
+                                ]
+                              },
+                              {:unexpected=>:kALIAS}
+                            ]
+                          }
                         ]
                       },
                       {
-                        module_decl_rhs: [
+                        alias_decl: [
+                          [:kALIAS, "alias"],
                           {
-                            module_members: [
-                              {
-                                module_decl: [
-                                  [:kMODULE, "module"],
-                                  {
-                                    module_name: [
-                                      [:tUIDENT, "Baz"]
-                                    ]
-                                  },
-                                  {:unexpected=>:kALIAS}
-                                ]
-                              }
+                            method_name: [
+                              [:tLIDENT, "foo"]
                             ]
                           },
-                          {:unexpected=>:kALIAS}
+                          {
+                            method_name: [
+                              [:tLIDENT, "bar"]
+                            ]
+                          }
                         ]
                       }
                     ]
                   },
-                  {
-                    alias_decl: [
-                      [:kALIAS, "alias"],
-                      {
-                        method_name: [
-                          [:tLIDENT, "foo"]
-                        ]
-                      },
-                      {
-                        method_name: [
-                          [:tLIDENT, "bar"]
-                        ]
-                      }
-                    ]
-                  }
+                  [:kEND, "end"]
                 ]
-              },
-              [:kEND, "end"]
+              }
             ]
           }
         ]
-      }
-    ]
-  },
-  factory: result.factory
-)
+      },
+      factory: result.factory
+    )
   end
 end
