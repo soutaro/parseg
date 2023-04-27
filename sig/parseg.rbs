@@ -18,6 +18,9 @@ module Parseg
     def warn: (String | Exception) -> void
             | () { () -> String } -> void
 
+    def debug: (String | Exception) -> void
+             | () { () -> String } -> void
+
     def tagged: [A] (*String) { () -> A } -> A
               | (*String) -> self
   end
