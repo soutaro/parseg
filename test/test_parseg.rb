@@ -164,6 +164,171 @@ class TestParseg < Minitest::Test
     )
   end
 
+  def test_parsing_rbs_add2
+    result = parse(<<~RBS)
+      module Foo
+        module Bar
+
+        end
+        alias foo bar
+      end
+    RBS
+
+    assert_tree(
+      result.tree,
+      {
+        start: [
+          {
+            module_decl: [
+              [:kMODULE, "module"],
+              {
+                module_name: [
+                  [:tUIDENT, "Foo"]
+                ]
+              },
+              {
+                module_decl_rhs: [
+                  {
+                    module_members: [
+                      {
+                        module_decl: [
+                          [:kMODULE, "module"],
+                          {
+                            module_name: [
+                              [:tUIDENT, "Bar"]
+                            ]
+                          },
+                          {
+                            module_decl_rhs: [
+                              {
+                                module_members: []
+                              },
+                              [:kEND, "end"]
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        alias_decl: [
+                          [:kALIAS, "alias"],
+                          {
+                            method_name: [
+                              [:tLIDENT, "foo"]
+                            ]
+                          },
+                          {
+                            method_name: [
+                              [:tLIDENT, "bar"]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  [:kEND, "end"]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      factory: result.factory
+    )
+
+    result = parse_changes(
+      result,
+      changes: [
+        [
+          "    alias hello",
+          [3, 0],
+          [3, 0]
+        ]
+      ]
+    ) do |source|
+      assert_equal <<~RBS, source
+        module Foo
+          module Bar
+            alias hello
+          end
+          alias foo bar
+        end
+      RBS
+    end
+
+    assert_tree(
+      result.tree,
+      {
+        start: [
+          {
+            module_decl: [
+              [:kMODULE, "module"],
+              {
+                module_name: [
+                  [:tUIDENT, "Foo"]
+                ]
+              },
+              {
+                module_decl_rhs: [
+                  {
+                    module_members: [
+                      {
+                        module_decl: [
+                          [:kMODULE, "module"],
+                          {
+                            module_name: [
+                              [:tUIDENT, "Bar"]
+                            ]
+                          },
+                          {
+                            module_decl_rhs: [
+                              {
+                                module_members: [
+                                  {
+                                    alias_decl: [
+                                      [:kALIAS, "alias"],
+                                      {
+                                        method_name: [
+                                          [:tLIDENT, "hello"]
+                                        ]
+                                      },
+                                      { unexpected: :kEND }
+                                    ]
+                                  }
+                                ]
+                              },
+                              [:kEND, "end"]
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        alias_decl: [
+                          [:kALIAS, "alias"],
+                          {
+                            method_name: [
+                              [:tLIDENT, "foo"]
+                            ]
+                          },
+                          {
+                            method_name: [
+                              [:tLIDENT, "bar"]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  [:kEND, "end"]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      factory: result.factory
+    )
+  end
+
   def test_parsing_rbs_delete
     result = parse(<<~RBS)
       module Foo

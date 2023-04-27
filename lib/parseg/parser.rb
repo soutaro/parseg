@@ -45,7 +45,7 @@ module Parseg
     end
 
     def current_token_type
-      if @leaving_change
+      if end_of_change?
         true
       else
         factory.current_type
@@ -79,19 +79,29 @@ module Parseg
 
       case
       when !before && after
+        @boc = true
         STDERR.puts("Enter into changes with `#{factory.current_type}` in #{current_non_terminal_name}@#{@parsing_changes_stack.size}")
       when before && !after
-        @leaving_change = true
-        STDERR.puts("Leave from changes with `#{factory.current_type}`(#{factory.current_token![2]}) in #{current_non_terminal_name}@#{@parsing_changes_stack.size}")
+        if inside_block_in_change?
+          @eoc = true
+          STDERR.puts("Leave from changes with `#{factory.current_type}`(#{factory.current_token![2]}) in #{current_non_terminal_name}@#{@parsing_changes_stack.size}")
+        end
+      else
+        @boc = false
+        @eoc = false
       end
     end
 
-    def leaving_change?
-      @leaving_change
+    def end_of_change?
+      @eoc
     end
 
-    def finish_leave
-      @leaving_change = false
+    def begin_of_change?
+      @boc
+    end
+
+    def consume_end_of_change
+      @eoc = false
     end
 
     def current_non_terminal_name
@@ -104,43 +114,40 @@ module Parseg
       factory.token_changed?
     end
 
-    def push_stack(name, cut)
-      if cut
+    def push_stack(name, block)
+      if block
         @parsing_changes_stack.push(
           [
             name,
-            parsing_change?,
-            false
+            parsing_change?
           ]
         )
       end
       yield
     ensure
-      if cut
+      if block
         @parsing_changes_stack.pop()
       end
     end
 
-    def entered_to_changed?
-      *_, prev, current = @parsing_changes_stack
-
-      if prev && current
-        if current[1]
-          !prev[1] && !prev[2]
-        else
-          current[2]
-        end
+    def inside_block_in_change?
+      if current = @parsing_changes_stack.last
+        current[1]
       else
         false
       end
     end
 
-    def consuming_changed_token
-      *_, current = @parsing_changes_stack
-      if current
-        unless current[2]
-          current[2] = true
-        end
+    def outer_most_block_in_change?
+      *_, prev, current = @parsing_changes_stack
+
+      case
+      when prev && current
+        current[1] && !prev[1]
+      when current
+        current[1]
+      else
+        false
       end
     end
 
@@ -173,7 +180,6 @@ module Parseg
       when Grammar::Expression::TokenSymbol
         if current_token_equals?(expr.token)
           id = current_token_id!
-          consuming_changed_token if current_token_id && factory.token_changed?
           advance_token()
 
           if expr.next_expr
@@ -196,7 +202,7 @@ module Parseg
         end
 
       when Grammar::Expression::NonTerminalSymbol
-        Parseg.logger.tagged("[#{expr.non_terminal.name}]") do
+        Parseg.logger.tagged("NT(:#{expr.non_terminal.name})@#{parsing_change?}") do
           push_stack(expr.non_terminal.name, expr.non_terminal.block?) do
             first_tokens = expr.non_terminal.rule.first_tokens
 
@@ -208,9 +214,16 @@ module Parseg
               )
 
               if expr.non_terminal.block?
-                if leaving_change? && entered_to_changed?
-                  finish_leave
-                end
+                Parseg.logger.fatal {
+                  {
+                    outer_most_block: outer_most_block_in_change?,
+                    current_token: factory.current_type
+                  }.inspect
+                }
+              end
+
+              if expr.non_terminal.block? && outer_most_block_in_change?
+                consume_end_of_change()
               end
 
               if expr.next_expr

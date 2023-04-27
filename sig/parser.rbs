@@ -22,29 +22,29 @@ module Parseg
 
     # Parsing-changes status
     #
-    # * The name of the *cut* non-terminal symbol
+    # * The name of the *block* non-terminal symbol
     # * If the *current* token is changed at the beginning of the symbol
-    # * If the
     #
-    @parsing_changes_stack: Array[[Symbol, bool, bool]]
+    @parsing_changes_stack: Array[[Symbol, bool]]
 
     # Returns true if current_token is changed
     def parsing_change?: () -> bool
 
-    def push_stack: [A] (Symbol, bool cut) { () -> A } -> A
+    def push_stack: [A] (Symbol, bool block) { () -> A } -> A
 
     def current_non_terminal_name: () -> Symbol?
 
-    # Enterred to change during parsing current *cutting* non terminal symbol
-    def entered_to_changed?: () -> bool
+    def inside_block_in_change?: () -> bool
 
-    @leaving_change: bool
-    def leaving_change?: () -> bool
+    @eoc: bool
+    def end_of_change?: () -> bool
 
-    def finish_leave: () -> void
+    @boc: bool
+    def begin_of_change?: () -> bool
 
-    # Set `entered_to_changed?` to true
-    def consuming_changed_token: () -> void
+    def consume_end_of_change: () -> void
+
+    def outer_most_block_in_change?: () -> bool
 
     private
 
