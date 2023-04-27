@@ -335,6 +335,90 @@ class TestParseg < Minitest::Test
     )
   end
 
+  def test_parsing_rbs_add_toplevel
+    session = Parseg::ParsingSession.new(grammar: Grammar, tokenizer: Tokenizer, start: :start)
+    session.error_tolerant_enabled = true
+    session.skip_unknown_tokens_enabled = true
+    session.change_based_error_recovery_enabled = true
+
+    result = session.update([[<<~RBS, [1, 0], [1, 0]]])
+      type foo = Integer
+    RBS
+
+    assert_equal <<~RBS, session.last_source
+      type foo = Integer
+    RBS
+
+    assert_tree(
+      result.tree,
+      {
+        start: [
+          {
+            type_alias_decl: [
+              [:kTYPE, "type"],
+              [:tLIDENT, "foo"],
+              [:kEQ, "="],
+              {
+                simple_type: [
+                  {
+                    type_name: [
+                      [:tUIDENT, "Integer"]
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      factory: result.factory
+    )
+
+    result = session.update([
+      ["module Foo\n", [1, 0], [1, 0]]
+    ])
+    assert_equal <<~RBS, session.last_source
+      module Foo
+      type foo = Integer
+    RBS
+
+    assert_tree(
+      result.tree,
+      {
+        start: [
+          {
+            module_decl: [
+              [:kMODULE, "module"],
+              {
+                module_name: [
+                  [:tUIDENT, "Foo"]
+                ]
+              },
+              {:unexpected=>:kTYPE}
+            ]
+          },
+          {
+            type_alias_decl: [
+              [:kTYPE, "type"],
+              [:tLIDENT, "foo"],
+              [:kEQ, "="],
+              {
+                simple_type: [
+                  {
+                    type_name: [
+                      [:tUIDENT, "Integer"]
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      factory: result.factory
+    )
+  end
+
   def test_parsing_rbs_delete
     session = Parseg::ParsingSession.new(grammar: Grammar, tokenizer: Tokenizer, start: :start)
     session.error_tolerant_enabled = true
