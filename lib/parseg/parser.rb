@@ -80,11 +80,11 @@ module Parseg
       case
       when !before && after
         @boc = true
-        STDERR.puts("Enter into changes with `#{factory.current_type}` in #{current_non_terminal_name}@#{@parsing_changes_stack.size}")
+        Parseg.logger.debug { "Enter into changes with `#{factory.current_type}` in #{current_non_terminal_name}@#{@parsing_changes_stack.size}" }
       when before && !after
         if inside_block_in_change?
           @eoc = true
-          STDERR.puts("Leave from changes with `#{factory.current_type}`(#{factory.current_token![2]}) in #{current_non_terminal_name}@#{@parsing_changes_stack.size}")
+          Parseg.logger.debug { "Leave from changes with `#{factory.current_type}`(#{factory.current_token![2]}) in #{current_non_terminal_name}@#{@parsing_changes_stack.size}" }
         end
       else
         @boc = false
@@ -111,7 +111,11 @@ module Parseg
     end
 
     def parsing_change?
-      factory.token_changed?
+      if current_token_id
+        factory.token_changed?
+      else
+        false
+      end
     end
 
     def push_stack(name, block)
@@ -144,8 +148,9 @@ module Parseg
       case
       when prev && current
         current[1] && !prev[1]
-      when current
-        current[1]
+      when prev
+        # Prev fills before current
+        prev[1]
       else
         false
       end
@@ -202,7 +207,7 @@ module Parseg
         end
 
       when Grammar::Expression::NonTerminalSymbol
-        Parseg.logger.tagged("NT(:#{expr.non_terminal.name})@#{parsing_change?}") do
+        Parseg.logger.tagged("NT(:#{expr.non_terminal.name})@#{parsing_change? ? "change" : ""}") do
           push_stack(expr.non_terminal.name, expr.non_terminal.block?) do
             first_tokens = expr.non_terminal.rule.first_tokens
 
@@ -214,7 +219,7 @@ module Parseg
               )
 
               if expr.non_terminal.block?
-                Parseg.logger.fatal {
+                Parseg.logger.debug {
                   {
                     outer_most_block: outer_most_block_in_change?,
                     current_token: factory.current_type
