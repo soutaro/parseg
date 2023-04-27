@@ -26,6 +26,7 @@ async function start() {
 	const startSymbol = workspace.getConfiguration('parseg-lsp').get('start') as string
 	const errorTolerant = workspace.getConfiguration('parseg-lsp').get("error_tolerant") as boolean
 	const skipTokens = workspace.getConfiguration('parseg-lsp').get("skip_tokens") as boolean
+	const changeBased = workspace.getConfiguration('parseg-lsp').get("change_based_recovery") as boolean
 
 	const options = [] as string[]
 
@@ -34,6 +35,9 @@ async function start() {
 	}
 	if (!skipTokens) {
 		options.push("--no-skip-tokens")
+	}
+	if (!changeBased) {
+		options.push("--no-change-based-recovery")
 	}
 
 	if (!grammarPath || grammarPath.length == 0) {
@@ -93,9 +97,4 @@ export function deactivate(): Thenable<void> | undefined {
 	} else {
 		return
 	}
-}
-
-
-function foo() {
-	const foo = 123;
 }

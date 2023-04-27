@@ -45,6 +45,12 @@
             "markdownDescription": "Enable skip tokens",
             "type": "boolean",
             "default": true
+          },
+          "parseg-lsp.change_based_recovery": {
+            "title": "Change based error recovery",
+            "markdownDescription": "Enable change based error recovery",
+            "type": "boolean",
+            "default": true
           }
         }
       }
