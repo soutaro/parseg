@@ -73,6 +73,8 @@ tokenizer = define_tokenizer(
   kATTRREADER: /attr_reader/,
   kATTRACCESSOR: /attr_accessor/,
   kATTRWRITER: /attr_writer/,
+  kTRUE: /true/,
+  kFALSE: /false/,
   kBAR: /\|/,
   kAND: /\&/,
   kLT: /\</,
@@ -102,6 +104,7 @@ grammar = Parseg::Grammar.new() do |grammar|
   grammar[:simple_type].rule = Alt(
     T(:kLPAREN) + NT(:type) + T(:kRPAREN),
     NT(:base_type),
+    NT(:singleton_type),
     NT(:type_name) + Opt(
       T(:kLBRACKET) + Repeat(NT(:type), T(:kCOMMA)) + T(:kRBRACKET)
     ),
@@ -114,6 +117,11 @@ grammar = Parseg::Grammar.new() do |grammar|
 
   grammar[:base_type].rule = Alt(
     T(:kVOID), T(:kUNTYPED), T(:kNIL), T(:kSELF), T(:kBOOL)
+  )
+
+  grammar[:singleton_type].rule = Alt(
+    T(:kTRUE),
+    T(:kFALSE)
   )
 
   grammar[:optional_type].rule = NT(:simple_type) + Opt(T(:kQUESTION))
@@ -255,7 +263,7 @@ grammar = Parseg::Grammar.new() do |grammar|
     )
 
   grammar[:type_alias_decl].rule =
-    T(:kTYPE) + type_names[module_name: false, interface_name: false] + Opt(NT(:type_params)) + T(:kEQ) + NT(:simple_type)
+    T(:kTYPE) + type_names[module_name: false, interface_name: false] + Opt(NT(:type_params)) + T(:kEQ) + NT(:type)
 
   grammar[:global_decl].rule =
     T(:tGIDENT) + T(:kCOLON) + NT(:simple_type)
@@ -284,6 +292,7 @@ grammar = Parseg::Grammar.new() do |grammar|
     Repeat(
       Alt(
         NT(:module_decl),
+        NT(:class_decl),
         NT(:interface_decl),
         NT(:constant_decl),
         NT(:ivar_member),
@@ -312,6 +321,40 @@ grammar = Parseg::Grammar.new() do |grammar|
     )
   )
 
+  grammar[:class_decl].block!.rule = T(:kCLASS) + NT(:module_name) + Alt(
+    NT(:module_alias_rhs),
+    Opt(NT(:type_params)) + NT(:class_decl_rhs)
+  )
+
+  grammar[:class_decl_rhs].rule = Opt(NT(:class_decl_super)) + NT(:class_members) + T(:kEND)
+
+  grammar[:class_decl_super].rule = T(:kLT) + NT(:module_name) + Opt(NT(:type_args))
+
+  grammar[:class_members].rule =
+    Opt(
+      Repeat(
+        Alt(
+          NT(:module_decl),
+          NT(:class_decl),
+          NT(:interface_decl),
+          NT(:constant_decl),
+          NT(:ivar_member),
+          NT(:self_ivar_member),
+          NT(:method_definition),
+          NT(:alias_decl),
+          NT(:type_alias_decl),
+          NT(:include),
+          NT(:extend),
+          NT(:prepend),
+          NT(:attr_reader),
+          NT(:attr_writer),
+          NT(:attr_accessor)
+        )
+      )
+    )
+
+  grammar[:type_args].rule = T(:kLBRACKET) + Repeat(NT(:type), T(:kCOMMA)) + T(:kRBRACKET)
+
   grammar[:use_wildcard_clause].rule = T(:kSTAR)
   grammar[:use_single_clause].rule =
     Alt(
@@ -327,6 +370,7 @@ grammar = Parseg::Grammar.new() do |grammar|
     Opt(Repeat(NT(:use_directive))) +
       Repeat(
         Alt(
+          NT(:class_decl),
           NT(:module_decl),
           NT(:interface_decl),
           NT(:global_decl),

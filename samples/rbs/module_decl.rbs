@@ -1,5 +1,10 @@
-module A
-  module Foo
+use Foo::Bar
+
+class Foo
+  type foo = true
+
+  interface _Hoge[T]
   end
-  alias foo bar
+
+  type list[A] = nil | [A, list[A]]
 end
