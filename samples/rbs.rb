@@ -80,6 +80,7 @@ tokenizer = define_tokenizer(
   kRPAREN: /\)/,
   kCOLON2: /::/,
   tNAMESPACE: /([A-Z]\w*::)+/,
+  tSYMBOL: /:\w+/,
   kCOLON: /:/,
   kARROW: /\-\>/,
   kOPERATOR: Regexp.union(%w(+@ + -@ - != !~ ! []= [] / % ` ^ <=> << <= === == =~ >= >> > ~)),
@@ -117,7 +118,13 @@ tokenizer = define_tokenizer(
   tULIDENT: /_\w*/,
 
   tATIDENT: /@\w+/,
-  tGIDENT: /\$[a-zA-Z]\w*/
+  tGIDENT: /\$[a-zA-Z]\w*/,
+
+  tDQSTRING: /"([^\\]|\\")*"/,
+  tSQSTRING: /'([^\\]|\\')*'/,
+
+  tINTEGER: /\d+/,
+
 )
 
 grammar = Parseg::Grammar.new() do |grammar|
@@ -141,7 +148,11 @@ grammar = Parseg::Grammar.new() do |grammar|
 
   grammar[:singleton_type].rule = Alt(
     T(:kTRUE),
-    T(:kFALSE)
+    T(:kFALSE),
+    T(:tDQSTRING),
+    T(:tSQSTRING),
+    T(:tINTEGER),
+    T(:tSYMBOL)
   )
 
   grammar[:optional_type].rule = NT(:simple_type) + Opt(T(:kQUESTION))
