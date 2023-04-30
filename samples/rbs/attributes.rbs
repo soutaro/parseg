@@ -26,5 +26,4 @@ class Foo
   attr_reader self.self: Integer
 
   attr_reader self.self(): Integer
-
 end
