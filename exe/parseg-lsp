@@ -28,6 +28,10 @@ OptionParser.new do |opts|
   end
 end.parse!(ARGV)
 
+STDERR.puts "Error tolerant:        #{error_tolerant_enabled ? "enabled" : "disabled"}"
+STDERR.puts "Skip tokens:           #{skip_tokens_enabled ? "enabled" : "disabled"}"
+STDERR.puts "Change based recovery: #{change_based_recovery_enabled ? "enabled" : "disabled"}"
+
 # @type const LSP: untyped
 
 LSP = LanguageServer::Protocol

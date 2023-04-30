@@ -1,0 +1,137 @@
+class Foo
+  def foo: () -> void
+
+  def foo : () -> void
+
+  def Foo: () -> void
+
+  def Foo : () -> void
+
+  def __: () -> void
+
+  def __ : () -> void
+
+  def _123!: () -> String
+
+  def _123! : () -> String
+
+  def self.foo: () -> void
+
+  def self?.foo: () -> void
+
+  def self.self: () -> void
+
+  def self?.self: () -> void
+
+  def self.self?: () -> void
+
+  def void: () -> void
+
+  def untyped: () -> void
+
+  def nil: () -> void
+
+  def self?: () -> void
+
+  def self: () -> void
+
+  def class: () -> void
+
+  def module: () -> void
+
+  def singleton: () -> void
+
+  def bool: () -> void
+
+  def def: () -> void
+
+  def interface: () -> void
+
+  def unchecked: () -> void
+
+  def include: () -> void
+
+  def extend: () -> void
+
+  def prepend: () -> void
+
+  def in: () -> void
+
+  def out: () -> void
+
+  def alias: () -> void
+
+  def type: () -> void
+
+  def use: () -> void
+
+  def as: () -> void
+
+  def attr_reader: () -> void
+
+  def attr_accessor: () -> void
+
+  def attr_writer: () -> void
+
+  def true: () -> void
+
+  def false: () -> void
+
+  def end: () -> void
+
+  def +: () -> void
+
+  def +@: () -> void
+
+  def -: () -> void
+
+  def -@: () -> void
+
+  def !: () -> void
+
+  def !=: () -> void
+
+  def !~: () -> void
+
+  def []: () -> void
+
+  def []=: () -> void
+
+  def *: () -> void
+
+  def **: () -> void
+
+  def /: () -> void
+
+  def &: () -> void
+
+  def /: () -> void
+
+  def %: () -> void
+
+  def `: () -> void
+
+  def ^: () -> void
+
+  def <: () -> void
+
+  def <<: () -> void
+
+  def <=: () -> void
+
+  def >: () -> void
+
+  def >=: () -> void
+
+  def <=> : () -> void
+
+  def ===: () -> void
+
+  def ==: () -> void
+
+  def =~: () -> void
+
+  def |: () -> void
+
+  def ~: () -> void
+end

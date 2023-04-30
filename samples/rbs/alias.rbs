@@ -1,0 +1,8 @@
+module Foo
+  alias self self.self
+  alias self? self.self?
+
+  alias self.+ -
+
+  alias self! self.self!
+end

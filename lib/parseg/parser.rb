@@ -161,6 +161,7 @@ module Parseg
         while type = current_token_type
           break if type == true
           break if current_token_included_in?(consumable_tokens)
+          Parseg.logger.info { "Skipping token `#{current_token_type}`" }
           skip_tokens << current_token_id!
           advance_token()
         end
@@ -212,9 +213,16 @@ module Parseg
             first_tokens = expr.non_terminal.rule.first_tokens
 
             if current_token_included_in?(first_tokens)
+              consumable_tokens_for_rule =
+                if !first_tokens.include?(nil) && expr.non_terminal.block?
+                  new_consumable_tokens(Set[], expr.next_expr)
+                else
+                  new_consumable_tokens(consumable_tokens, expr.next_expr)
+                end
+
               value = parse_rule(
                 expr.non_terminal.rule,
-                new_consumable_tokens(consumable_tokens, expr.next_expr),
+                consumable_tokens_for_rule,
                 skip_tokens
               )
 

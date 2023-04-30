@@ -1,4 +1,5 @@
 {
   "parseg-lsp.grammar": "rbs.rb",
-  "parseg-lsp.change_based_recovery": true
+  "parseg-lsp.change_based_recovery": true,
+  "parseg-lsp.skip_tokens": true
 }

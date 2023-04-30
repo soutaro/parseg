@@ -1,5 +1,3 @@
-include Parseg
-
 def define_tokenizer(**defn)
   tokenizer = Object.new
 
@@ -42,44 +40,53 @@ def define_tokenizer(**defn)
   tokenizer
 end
 
+keywords = %w(
+  void
+  untyped
+  nil
+  self
+  class
+  module
+  singleton
+  bool
+  def
+  interface
+  unchecked
+  include
+  extend
+  prepend
+  in
+  out
+  alias
+  type
+  use
+  as
+  attr_reader
+  attr_accessor
+  attr_writer
+  true
+  false
+  end
+).each.with_object({}) do |word, kwds|
+  kwds[:"k#{word.upcase.gsub('_', '')}"] = /#{Regexp.quote(word)}\b/
+end
+
 tokenizer = define_tokenizer(
+  kSELFQ: /self\?/,
+  kSELFBANG: /self!/,
+  kSELFEQ: /self=/,
+  **keywords,
   kLPAREN: /\(/,
   kRPAREN: /\)/,
   kCOLON2: /::/,
   tNAMESPACE: /([A-Z]\w*::)+/,
   kCOLON: /:/,
   kARROW: /\-\>/,
-  kVOID: /void/,
-  kUNTYPED: /untyped/,
-  kNIL: /nil/,
-  kSELFQ: /self\?/,
-  kSELF: /self/,
-  kCLASS: /class/,
-  kMODULE: /module/,
-  kSINGLETON: /singleton/,
-  kBOOL: /bool/,
-  kDEF: /def/,
-  kINTERFACE: /interface/,
-  kUNCHECKED: /unchecked/,
-  kINCLUDE: /include/,
-  kEXTEND: /extend/,
-  kPREPEND: /prepend/,
-  kIN: /in/,
-  kOUT: /out/,
-  kALIAS: /alias/,
-  kTYPE: /type/,
-  kUSE: /use/,
-  kAS: /as/,
-  kATTRREADER: /attr_reader/,
-  kATTRACCESSOR: /attr_accessor/,
-  kATTRWRITER: /attr_writer/,
-  kTRUE: /true/,
-  kFALSE: /false/,
+  kOPERATOR: Regexp.union(%w(+@ + -@ - != !~ ! []= [] / % ` ^ <=> << <= === == =~ >= >> > ~)),
   kBAR: /\|/,
   kAND: /\&/,
   kLT: /\</,
   kEQ: /\=/,
-  kEND: /end/,
   kDOT3: /\.\.\./,
   kLBRACKET: /\[/,
   kRBRACKET: /\]/,
@@ -90,13 +97,26 @@ tokenizer = define_tokenizer(
   kQUESTION: /\?/,
   kSTAR2: /\*\*/,
   kSTAR: /\*/,
-  tUKEYWORD: /[A-Z]\w*:/,
-  tLKEYWORD: /[a-z]\w*:/,
-  tULKEYWORD: /_[a-z]\w*:/,
+
+  tUKEYWORD: /[A-Z]\w*[!?=]?:/,
+  tUIDENT_BANG: /[A-Z]\w*!/,
+  tUIDENT_EQ: /[A-Z]\w*=/,
+  tUIDENT_Q: /[A-Z]\w*\?/,
   tUIDENT: /[A-Z]\w*/,
+
+  tLKEYWORD: /[a-z]\w*[!?=]?:/,
+  tLIDENT_BANG: /[a-z]\w*!/,
+  tLIDENT_EQ: /[a-z]\w*=/,
+  tLIDENT_Q: /[a-z]\w*\?/,
   tLIDENT: /[a-z]\w*/,
-  tULIDENT: /_[A-Z]\w*/,
-  tATIDENT: /@[a-zA-Z]\w*/,
+
+  tULKEYWORD: /_\w*[!?=]?:/,
+  tULIDENT_BANG: /_\w*!/,
+  tULIDENT_EQ: /_\w*=/,
+  tULIDENT_Q: /_\w*\?/,
+  tULIDENT: /_\w*/,
+
+  tATIDENT: /@\w+/,
   tGIDENT: /\$[a-zA-Z]\w*/
 )
 
@@ -145,6 +165,9 @@ grammar = Parseg::Grammar.new() do |grammar|
     Opt(T(:kUNCHECKED)) + Opt(Alt(T(:kIN), T(:kOUT))) + T(:tUIDENT) + Opt(T(:kLT) + NT(:upper_bound))
 
   grammar[:upper_bound].rule =
+    NT(:upper_bound_name) + Opt(NT(:type_args))
+
+  grammar[:upper_bound_name].rule =
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + Alt(T(:tUIDENT), T(:tULIDENT))
 
   grammar[:block].rule = Opt(T(:kQUESTION)) + T(:kLBRACE) + NT(:params) + Opt(NT(:block_self_binding)) + T(:kARROW) + NT(:return_type) + T(:kRBRACE)
@@ -230,25 +253,84 @@ grammar = Parseg::Grammar.new() do |grammar|
   )
 
   grammar[:method_definition].rule =
-    T(:kDEF) + Opt(T(:kSELF) + T(:kDOT)) + Alt(
-      NT(:method_name) + T(:kCOLON),
-      T(:tUKEYWORD),
+    T(:kDEF) + NT(:method_name_colon) + NT(:method_types)
+
+  grammar[:method_name_colon].rule =
+    Alt(
+      NT(:self_method_name_colon),
+      NT(:raw_method_name_colon),
+    )
+
+  grammar[:self_method_name_colon].rule =
+    Alt(T(:kSELF), T(:kSELFQ)) + Alt(
+      T(:kCOLON),
+      T(:kDOT) + Alt(
+        NT(:raw_method_name_colon),
+        T(:kSELF) + T(:kCOLON),
+        T(:kSELFQ) + T(:kCOLON)
+      )
+    )
+
+  grammar[:raw_method_name_colon].rule =
+    Alt(
+      NT(:method_name_ident) + T(:kCOLON),
+      Alt(T(:kSELFEQ), T(:kSELFBANG)) + T(:kCOLON),
       T(:tLKEYWORD),
-      T(:tULKEYWORD),
-    ) + NT(:method_types)
+      T(:tUKEYWORD),
+      T(:tULKEYWORD)
+    )
+
+  grammar[:method_name_ident].rule =
+    Alt(
+      T(:tLIDENT),
+      T(:tLIDENT_BANG),
+      T(:tLIDENT_EQ),
+      T(:tLIDENT_Q),
+      T(:tUIDENT),
+      T(:tUIDENT_BANG),
+      T(:tUIDENT_EQ),
+      T(:tUIDENT_Q),
+      T(:tULIDENT),
+      T(:tULIDENT_BANG),
+      T(:tULIDENT_EQ),
+      T(:tULIDENT_Q),
+      T(:kVOID),
+      T(:kUNTYPED),
+      T(:kNIL),
+      T(:kSELFBANG),
+      T(:kSELFEQ),
+      T(:kCLASS),
+      T(:kMODULE),
+      T(:kSINGLETON),
+      T(:kBOOL),
+      T(:kDEF),
+      T(:kINTERFACE),
+      T(:kUNCHECKED),
+      T(:kIN),
+      T(:kOUT),
+      T(:kINCLUDE),
+      T(:kEXTEND),
+      T(:kPREPEND),
+      T(:kALIAS),
+      T(:kTYPE),
+      T(:kUSE),
+      T(:kAS),
+      T(:kATTRREADER),
+      T(:kATTRACCESSOR),
+      T(:kATTRWRITER),
+      T(:kTRUE),
+      T(:kFALSE),
+      T(:kEND),
+      T(:kOPERATOR),
+      T(:kLT),
+      T(:kAND),
+      T(:kBAR),
+      T(:kSTAR),
+      T(:kSTAR2),
+    )
 
   grammar[:instance_method_definition].rule =
-    T(:kDEF) + Alt(
-      NT(:method_name) + T(:kCOLON),
-      T(:tUKEYWORD),
-      T(:tLKEYWORD),
-      T(:tULKEYWORD),
-    ) + NT(:method_types)
-
-
-  grammar[:method_name].rule = T(:tLIDENT)
-
-  grammar[:attribute_name].rule = T(:tLIDENT)
+    T(:kDEF) + NT(:raw_method_name_colon) + NT(:method_types)
 
   grammar[:method_types].rule =
     Alt(
@@ -257,10 +339,14 @@ grammar = Parseg::Grammar.new() do |grammar|
     )
 
   grammar[:alias_decl].rule =
-    T(:kALIAS) + Alt(
-      T(:kSELF) + T(:kDOT) + NT(:method_name) + T(:kSELF) + T(:kDOT) + NT(:method_name),
-      NT(:method_name) + NT(:method_name)
-    )
+    T(:kALIAS) + NT(:alias_name_decl) + NT(:alias_name_decl)
+
+  grammar[:alias_name_decl].rule = Alt(NT(:self_alias_name), NT(:alias_name_ident))
+
+  grammar[:alias_name_ident].rule = Alt(NT(:method_name_ident), Alt(T(:kSELFQ)))
+
+  grammar[:self_alias_name].rule =
+    T(:kSELF) + Opt(T(:kDOT) + Alt(T(:kSELF), NT(:alias_name_ident)))
 
   grammar[:type_alias_decl].rule =
     T(:kTYPE) + type_names[module_name: false, interface_name: false] + Opt(NT(:type_params)) + T(:kEQ) + NT(:type)
@@ -268,8 +354,66 @@ grammar = Parseg::Grammar.new() do |grammar|
   grammar[:global_decl].rule =
     T(:tGIDENT) + T(:kCOLON) + NT(:simple_type)
 
+  grammar[:attribute_name_ident].rule =
+    Alt(
+      T(:tLIDENT),
+      T(:tUIDENT),
+      T(:tULIDENT),
+      T(:kVOID),
+      T(:kUNTYPED),
+      T(:kNIL),
+      T(:kCLASS),
+      T(:kMODULE),
+      T(:kSINGLETON),
+      T(:kBOOL),
+      T(:kDEF),
+      T(:kINTERFACE),
+      T(:kUNCHECKED),
+      T(:kIN),
+      T(:kOUT),
+      T(:kINCLUDE),
+      T(:kEXTEND),
+      T(:kPREPEND),
+      T(:kALIAS),
+      T(:kTYPE),
+      T(:kUSE),
+      T(:kAS),
+      T(:kATTRREADER),
+      T(:kATTRACCESSOR),
+      T(:kATTRWRITER),
+      T(:kTRUE),
+      T(:kFALSE),
+      T(:kEND)
+    )
+
+  grammar[:attribute_variable_decl].rule =
+    T(:kLPAREN) + Opt(T(:tATIDENT)) + T(:kRPAREN)
+
+  grammar[:self_attribute_name_decl].rule =
+    T(:kSELF) + Alt(
+      Opt(NT(:attribute_variable_decl)) + T(:kCOLON),
+      T(:kDOT) + Alt(
+        NT(:raw_attribute_name_decl),
+        T(:kSELF) + Opt(NT(:attribute_variable_decl)) + T(:kCOLON)
+      )
+    )
+
+  grammar[:raw_attribute_name_decl].rule =
+    Alt(
+      NT(:attribute_name_ident) + Opt(NT(:attribute_variable_decl)) + T(:kCOLON),
+      T(:tLKEYWORD),
+      T(:tUKEYWORD),
+      T(:tULKEYWORD)
+    )
+
+  grammar[:attribute_name_decl].rule =
+    Alt(
+      NT(:self_attribute_name_decl),
+      NT(:raw_attribute_name_decl)
+    )
+
   attribute = -> (keyword) {
-    T(keyword) + NT(:attribute_name) + Opt(T(:kLPAREN) + Opt(T(:tATIDENT)) + T(:kRPAREN)) + T(:kCOLON) + NT(:type)
+    T(keyword) + NT(:attribute_name_decl) + NT(:type)
   }
 
   grammar[:attr_reader].rule = attribute[:kATTRREADER]
@@ -368,14 +512,16 @@ grammar = Parseg::Grammar.new() do |grammar|
 
   grammar[:start].rule =
     Opt(Repeat(NT(:use_directive))) +
-      Repeat(
-        Alt(
-          NT(:class_decl),
-          NT(:module_decl),
-          NT(:interface_decl),
-          NT(:global_decl),
-          NT(:type_alias_decl),
-          NT(:constant_decl)
+      Opt(
+        Repeat(
+          Alt(
+            NT(:class_decl),
+            NT(:module_decl),
+            NT(:interface_decl),
+            NT(:global_decl),
+            NT(:type_alias_decl),
+            NT(:constant_decl)
+          )
         )
       )
 end

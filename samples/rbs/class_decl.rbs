@@ -1,0 +1,23 @@
+class Foo
+end
+
+class Foo < Super
+end
+
+class Foo < Super[Integer]
+end
+
+class Foo[A]
+end
+
+class Foo[A, B, C]
+end
+
+class Foo[unchecked in A, unchecked out B]
+end
+
+class Foo[A < X]
+end
+
+class Foo[A < _Foo[Integer]]
+end

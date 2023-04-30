@@ -1,0 +1,30 @@
+use RBS::TypeName
+
+class Foo
+  attr_reader name: String
+
+  attr_reader name(): String
+
+  attr_reader name(@email): String
+
+  attr_writer Foo: Integer
+
+  attr_writer Foo(): String
+
+  attr_writer Foo(@Foo): String
+
+  attr_accessor _Foo: Integer
+
+  attr_accessor _Foo(): Integer
+
+  attr_accessor _Foo(@_Foo): Integer
+
+  attr_reader self: Integer
+
+  attr_reader self(): Integer
+
+  attr_reader self.self: Integer
+
+  attr_reader self.self(): Integer
+
+end

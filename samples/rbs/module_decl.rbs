@@ -1,10 +1,6 @@
-use Foo::Bar
 
-class Foo
-  type foo = true
-
-  interface _Hoge[T]
+module Foo
+  interface _Hello
+    def foo: -> void
   end
-
-  type list[A] = nil | [A, list[A]]
 end
