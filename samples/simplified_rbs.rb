@@ -142,9 +142,7 @@ grammar = Parseg::Grammar.new() do |grammar|
     T(:kVOID), T(:kUNTYPED), T(:kNIL), T(:kSELF), T(:kBOOL)
   )
 
-  grammar[:return_type].rule = NT(:type)
-
-  grammar[:method_type].rule = Opt(NT(:type_params)) + Opt(NT(:params)) + Opt(NT(:block)) + T(:kARROW) + NT(:return_type)
+  grammar[:method_type].rule = Opt(NT(:type_params)) + Opt(NT(:params)) + T(:kARROW) + NT(:type)
 
   grammar[:type_params].rule =
     T(:kLBRACKET) + Repeat(NT(:type_param), T(:kCOMMA)) + T(:kRBRACKET)
@@ -158,43 +156,7 @@ grammar = Parseg::Grammar.new() do |grammar|
   grammar[:upper_bound_name].rule =
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + Alt(T(:tUIDENT), T(:tULIDENT))
 
-  grammar[:block].rule = Opt(T(:kQUESTION)) + T(:kLBRACE) + NT(:params) + Opt(NT(:block_self_binding)) + T(:kARROW) + NT(:return_type) + T(:kRBRACE)
-
-  grammar[:block_self_binding].rule = T(:kLBRACKET) + T(:kSELF) + T(:kCOLON) + NT(:type) + T(:kRBRACKET)
-
-  grammar[:params].rule = T(:kLPAREN) + Opt(NT(:required_params)) + T(:kRPAREN)
-
-  grammar[:required_params].rule = Alt(
-    NT(:required_param) + Opt(T(:kCOMMA) + NT(:required_params)),
-    NT(:question_param) + Opt(T(:kCOMMA) + NT(:question_params)),
-    NT(:rest_param) + Opt(T(:kCOMMA) + NT(:keyword_params)),
-    NT(:keyword_params)
-  )
-
-  grammar[:question_params].rule = Alt(
-    T(:kQUESTION) + Alt(
-      NT(:required_param) + Opt(T(:kCOMMA) + NT(:question_params)),
-      NT(:keyword_param) + Opt(T(:kCOMMA) + NT(:keyword_params))
-    ),
-    NT(:rest_param) + Opt(T(:kCOMMA) + NT(:keyword_params)),
-    NT(:keyword_params)
-  )
-
-  grammar[:keyword_params].rule = Alt(
-    NT(:keyword_param) + Opt(T(:kCOMMA) + NT(:keyword_params)),
-    T(:kQUESTION) + NT(:keyword_param) + Opt(T(:kCOMMA) + NT(:keyword_params)),
-    NT(:keyword_rest_param)
-  )
-
-  grammar[:required_param].rule = NT(:type) + Opt(T(:tLIDENT))
-
-  grammar[:question_param].rule = T(:kQUESTION) + Alt(NT(:required_param), NT(:keyword_param))
-
-  grammar[:keyword_param].rule = Alt(T(:tLKEYWORD), T(:tUKEYWORD), T(:tULKEYWORD)) + NT(:type) + Opt(T(:tLIDENT))
-
-  grammar[:rest_param].rule = T(:kSTAR) + NT(:type) + Opt(T(:tLIDENT))
-
-  grammar[:keyword_rest_param].rule = T(:kSTAR2) + NT(:type) + Opt(T(:tLIDENT))
+  grammar[:params].rule = T(:kLPAREN) + Opt(Repeat(NT(:type), T(:kCOMMA))) + T(:kRPAREN)
 
   grammar[:module_name].rule =
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + T(:tUIDENT)
@@ -337,62 +299,10 @@ grammar = Parseg::Grammar.new() do |grammar|
   grammar[:global_decl].rule =
     T(:tGIDENT) + T(:kCOLON) + NT(:simple_type)
 
-  grammar[:attribute_name_ident].rule =
-    Alt(
-      T(:tLIDENT),
-      T(:tUIDENT),
-      T(:tULIDENT),
-      T(:kVOID),
-      T(:kUNTYPED),
-      T(:kNIL),
-      T(:kCLASS),
-      T(:kMODULE),
-      T(:kSINGLETON),
-      T(:kBOOL),
-      T(:kDEF),
-      T(:kINTERFACE),
-      T(:kUNCHECKED),
-      T(:kIN),
-      T(:kOUT),
-      T(:kINCLUDE),
-      T(:kEXTEND),
-      T(:kPREPEND),
-      T(:kALIAS),
-      T(:kTYPE),
-      T(:kUSE),
-      T(:kAS),
-      T(:kATTRREADER),
-      T(:kATTRACCESSOR),
-      T(:kATTRWRITER),
-      T(:kTRUE),
-      T(:kFALSE),
-      T(:kEND)
-    )
-
-  grammar[:attribute_variable_decl].rule =
-    T(:kLPAREN) + Opt(T(:tATIDENT)) + T(:kRPAREN)
-
-  grammar[:self_attribute_name_decl].rule =
-    T(:kSELF) + Alt(
-      Opt(NT(:attribute_variable_decl)) + T(:kCOLON),
-      T(:kDOT) + Alt(
-        NT(:raw_attribute_name_decl),
-        T(:kSELF) + Opt(NT(:attribute_variable_decl)) + T(:kCOLON)
-      )
-    )
-
-  grammar[:raw_attribute_name_decl].rule =
-    Alt(
-      NT(:attribute_name_ident) + Opt(NT(:attribute_variable_decl)) + T(:kCOLON),
-      T(:tLKEYWORD),
-      T(:tUKEYWORD),
-      T(:tULKEYWORD)
-    )
-
   grammar[:attribute_name_decl].rule =
     Alt(
-      NT(:self_attribute_name_decl),
-      NT(:raw_attribute_name_decl)
+      T(:tLIDENT) + T(:kCOLON),
+      T(:tLKEYWORD),
     )
 
   attribute = -> (keyword) {
