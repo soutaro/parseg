@@ -202,27 +202,8 @@ grammar = Parseg::Grammar.new() do |grammar|
 
   grammar[:method_name_colon].rule =
     Alt(
-      NT(:self_method_name_colon),
-      NT(:raw_method_name_colon),
-    )
-
-  grammar[:self_method_name_colon].rule =
-    Alt(T(:kSELF), T(:kSELFQ)) + Alt(
-      T(:kCOLON),
-      T(:kDOT) + Alt(
-        NT(:raw_method_name_colon),
-        T(:kSELF) + T(:kCOLON),
-        T(:kSELFQ) + T(:kCOLON)
-      )
-    )
-
-  grammar[:raw_method_name_colon].rule =
-    Alt(
-      NT(:method_name_ident) + T(:kCOLON),
-      Alt(T(:kSELFEQ), T(:kSELFBANG)) + T(:kCOLON),
       T(:tLKEYWORD),
-      T(:tUKEYWORD),
-      T(:tULKEYWORD)
+      T(:tLIDENT) + T(:kCOLON)
     )
 
   grammar[:method_name_ident].rule =

@@ -1,6 +1,15 @@
 
-module Foo
-  interface _Hello
-    def foo: -> void
-  end
+class Conference
+  attr_reader name: String
+
+  attr_reader year: Integer
+
+  def initialize: (String) -> void
 end
+
+
+
+
+
+
+
