@@ -25,7 +25,11 @@ class SamplesTest < Minitest::Test
 
           result = parser.parse(grammar.non_terminals[:start])
 
-          refute result.has_error?, "Parsing #{sample_path} by #{grammar_file} failed"
+          unless sample_path.basename.to_s.start_with?("FAIL--")
+            refute result.has_error?, "Parsing #{sample_path} by #{grammar_file} failed, while expected to succeed"
+          else
+            assert result.has_error?, "Parsing #{sample_path} by #{grammar_file} succeeded, while expected to fail"
+          end
         end
       end
     end
