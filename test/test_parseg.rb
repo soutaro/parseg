@@ -80,13 +80,29 @@ class TestParseg < Minitest::Test
                         alias_decl: [
                           [:kALIAS, "alias"],
                           {
-                            method_name: [
-                              [:tLIDENT, "foo"]
+                            alias_name_decl: [
+                              {
+                                alias_name_ident: [
+                                  {
+                                    method_name_ident: [
+                                      [:tLIDENT, "foo"],
+                                    ]
+                                  }
+                                ]
+                              },
                             ]
                           },
                           {
-                            method_name: [
-                              [:tLIDENT, "bar"]
+                            alias_name_decl: [
+                              {
+                                alias_name_ident: [
+                                  {
+                                    method_name_ident: [
+                                      [:tLIDENT, "bar"]
+                                    ]
+                                  }
+                                ]
+                              }
                             ]
                           }
                         ]
@@ -144,13 +160,29 @@ class TestParseg < Minitest::Test
                         alias_decl: [
                           [:kALIAS, "alias"],
                           {
-                            method_name: [
-                              [:tLIDENT, "foo"]
+                            alias_name_decl: [
+                              {
+                                alias_name_ident: [
+                                  {
+                                    method_name_ident: [
+                                      [:tLIDENT, "foo"],
+                                    ]
+                                  }
+                                ]
+                              },
                             ]
                           },
                           {
-                            method_name: [
-                              [:tLIDENT, "bar"]
+                            alias_name_decl: [
+                              {
+                                alias_name_ident: [
+                                  {
+                                    method_name_ident: [
+                                      [:tLIDENT, "bar"]
+                                    ]
+                                  }
+                                ]
+                              }
                             ]
                           }
                         ]
@@ -223,13 +255,29 @@ class TestParseg < Minitest::Test
                         alias_decl: [
                           [:kALIAS, "alias"],
                           {
-                            method_name: [
-                              [:tLIDENT, "foo"]
+                            alias_name_decl: [
+                              {
+                                alias_name_ident: [
+                                  {
+                                    method_name_ident: [
+                                      [:tLIDENT, "foo"]
+                                    ]
+                                  }
+                                ]
+                              }
                             ]
                           },
                           {
-                            method_name: [
-                              [:tLIDENT, "bar"]
+                            alias_name_decl: [
+                              {
+                                alias_name_ident: [
+                                  {
+                                    method_name_ident: [
+                                      [:tLIDENT, "bar"]
+                                    ]
+                                  }
+                                ]
+                              }
                             ]
                           }
                         ]
@@ -268,11 +316,7 @@ class TestParseg < Minitest::Test
           {
             module_decl: [
               [:kMODULE, "module"],
-              {
-                module_name: [
-                  [:tUIDENT, "Foo"]
-                ]
-              },
+              { module_name: [[:tUIDENT, "Foo"]] },
               {
                 module_decl_rhs: [
                   {
@@ -280,11 +324,7 @@ class TestParseg < Minitest::Test
                       {
                         module_decl: [
                           [:kMODULE, "module"],
-                          {
-                            module_name: [
-                              [:tUIDENT, "Bar"]
-                            ]
-                          },
+                          { module_name: [[:tUIDENT, "Bar"]] },
                           {
                             module_decl_rhs: [
                               {
@@ -292,39 +332,27 @@ class TestParseg < Minitest::Test
                                   {
                                     alias_decl: [
                                       [:kALIAS, "alias"],
-                                      {
-                                        method_name: [
-                                          [:tLIDENT, "hello"]
-                                        ]
-                                      },
-                                      { unexpected: :kEND }
+                                      { alias_name_decl: [{ alias_name_ident: [{ method_name_ident: [[:tLIDENT, "hello"]] }] }] },
+                                      { alias_name_decl: [{ alias_name_ident: [{ method_name_ident: [[:kEND, "end"]] }] }] }
+                                    ]
+                                  },
+                                  {
+                                    alias_decl: [
+                                      [:kALIAS, "alias"],
+                                      { alias_name_decl: [{ alias_name_ident: [{ method_name_ident: [[:tLIDENT, "foo"]] }] }] },
+                                      { alias_name_decl: [{ alias_name_ident: [{ method_name_ident: [[:tLIDENT, "bar"]] }] }] }
                                     ]
                                   }
                                 ]
                               },
                               [:kEND, "end"]
                             ]
-                          }
-                        ]
-                      },
-                      {
-                        alias_decl: [
-                          [:kALIAS, "alias"],
-                          {
-                            method_name: [
-                              [:tLIDENT, "foo"]
-                            ]
                           },
-                          {
-                            method_name: [
-                              [:tLIDENT, "bar"]
-                            ]
-                          }
                         ]
                       }
                     ]
                   },
-                  [:kEND, "end"]
+                  { unexpected: nil }
                 ]
               }
             ]
@@ -359,10 +387,26 @@ class TestParseg < Minitest::Test
               [:tLIDENT, "foo"],
               [:kEQ, "="],
               {
-                simple_type: [
+                type: [
                   {
-                    type_name: [
-                      [:tUIDENT, "Integer"]
+                    union_type: [
+                      {
+                        intersection_type: [
+                          {
+                            optional_type: [
+                              {
+                                simple_type: [
+                                  {
+                                    type_name: [
+                                      [:tUIDENT, "Integer"]
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
                     ]
                   }
                 ]
@@ -403,10 +447,26 @@ class TestParseg < Minitest::Test
               [:tLIDENT, "foo"],
               [:kEQ, "="],
               {
-                simple_type: [
+                type: [
                   {
-                    type_name: [
-                      [:tUIDENT, "Integer"]
+                    union_type: [
+                      {
+                        intersection_type: [
+                          {
+                            optional_type: [
+                              {
+                                simple_type: [
+                                  {
+                                    type_name: [
+                                      [:tUIDENT, "Integer"]
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
                     ]
                   }
                 ]
@@ -494,16 +554,8 @@ class TestParseg < Minitest::Test
                       {
                         alias_decl: [
                           [:kALIAS, "alias"],
-                          {
-                            method_name: [
-                              [:tLIDENT, "foo"]
-                            ]
-                          },
-                          {
-                            method_name: [
-                              [:tLIDENT, "bar"]
-                            ]
-                          }
+                          { alias_name_decl: [{ alias_name_ident: [{ method_name_ident: [[:tLIDENT, "foo"]] }] }] },
+                          { alias_name_decl: [{ alias_name_ident: [{ method_name_ident: [[:tLIDENT, "bar"]] }] }] }
                         ]
                       }
                     ]
@@ -586,16 +638,8 @@ class TestParseg < Minitest::Test
                       {
                         alias_decl: [
                           [:kALIAS, "alias"],
-                          {
-                            method_name: [
-                              [:tLIDENT, "foo"]
-                            ]
-                          },
-                          {
-                            method_name: [
-                              [:tLIDENT, "bar"]
-                            ]
-                          }
+                          { alias_name_decl: [{ alias_name_ident: [{ method_name_ident: [[:tLIDENT, "foo"]] }] }] },
+                          { alias_name_decl: [{ alias_name_ident: [{ method_name_ident: [[:tLIDENT, "bar"]] }] }] }
                         ]
                       }
                     ]

@@ -24,7 +24,7 @@ class TokenFactoryTest < Minitest::Test
     assert_equal "1 2 3 4", changed.source
 
     assert_equal(
-      { 3 => [:INTEGER, 4, "3"], 4 => [:INTEGER, 6, "4"]},
+      { 4 => [:INTEGER, 6, "4"]},
       changed.inserted_tokens
     )
 

@@ -1,5 +1,5 @@
 class Talk
-  attr_reader title: -> String
+  attr_reader title: String
 
   def initialize: (String) -> void
 end
