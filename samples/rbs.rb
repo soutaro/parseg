@@ -1,45 +1,3 @@
-def define_tokenizer(**defn)
-  tokenizer = Object.new
-
-  tokenizer.singleton_class.define_method(:each_token) do |string, &block|
-    scan = StringScanner.new(string)
-
-    while true
-      while str = scan.scan(/(\s+)|(#[^\n]*)/)
-        # nop
-      end
-
-      break if scan.eos?
-
-      failed = defn.each do |type, regexp|
-        if string = scan.scan(regexp)
-          block.call [type, scan.charpos - string.size, string]
-          break false
-        end
-      end
-
-      if failed
-        string = scan.scan(/[^\s]+/)
-        block.call [:UNKNOWN, scan.charpos - string.size, string]
-      end
-    end
-
-    block.call nil
-  end
-
-  tokenizer.singleton_class.define_method(:all_tokens) do
-    toks = []
-
-    while tok = next_token
-      toks << tok
-    end
-
-    toks
-  end
-
-  tokenizer
-end
-
 keywords = %w(
   void
   untyped
@@ -67,64 +25,68 @@ keywords = %w(
   true
   false
   end
-).each.with_object({}) do |word, kwds|
+).each.with_object({}) do |word, kwds| #$ Hash[Symbol, Regexp]
   kwds[:"k#{word.upcase.gsub('_', '')}"] = /#{Regexp.quote(word)}\b/
 end
 
-tokenizer = define_tokenizer(
-  kSELFQ: /self\?/,
-  kSELFBANG: /self!/,
-  kSELFEQ: /self=/,
-  **keywords,
-  kLPAREN: /\(/,
-  kRPAREN: /\)/,
-  kCOLON2: /::/,
-  tNAMESPACE: /([A-Z]\w*::)+/,
-  tSYMBOL: /:\w+/,
-  kCOLON: /:/,
-  kARROW: /\-\>/,
-  kOPERATOR: Regexp.union(%w(+@ + -@ - != !~ ! []= [] / % ` ^ <=> << <= === == =~ >= >> > ~)),
-  kBAR: /\|/,
-  kAND: /\&/,
-  kLT: /\</,
-  kEQ: /\=/,
-  kDOT3: /\.\.\./,
-  kLBRACKET: /\[/,
-  kRBRACKET: /\]/,
-  kLBRACE: /\{/,
-  kRBRACE: /\}/,
-  kCOMMA: /,/,
-  kDOT: /\./,
-  kQUESTION: /\?/,
-  kSTAR2: /\*\*/,
-  kSTAR: /\*/,
+tokenizer = Parseg::StrscanTokenizer.new(
+  {
+    kSELFQ: /self\?/,
+    kSELFBANG: /self!/,
+    kSELFEQ: /self=/,
+    **keywords,
+    kLPAREN: /\(/,
+    kRPAREN: /\)/,
+    kCOLON2: /::/,
+    tNAMESPACE: /([A-Z]\w*::)+/,
+    tSYMBOL: /:\w+/,
+    kCOLON: /:/,
+    kARROW: /\-\>/,
+    kOPERATOR: Regexp.union(%w(+@ + -@ - != !~ ! []= [] / % ` ^ <=> << <= === == =~ >= >> > ~)),
+    kBAR: /\|/,
+    kAND: /\&/,
+    kLT: /\</,
+    kEQ: /\=/,
+    kDOT3: /\.\.\./,
+    kLBRACKET: /\[/,
+    kRBRACKET: /\]/,
+    kLBRACE: /\{/,
+    kRBRACE: /\}/,
+    kCOMMA: /,/,
+    kDOT: /\./,
+    kQUESTION: /\?/,
+    kSTAR2: /\*\*/,
+    kSTAR: /\*/,
 
-  tUKEYWORD: /[A-Z]\w*[!?=]?:/,
-  tUIDENT_BANG: /[A-Z]\w*!/,
-  tUIDENT_EQ: /[A-Z]\w*=/,
-  tUIDENT_Q: /[A-Z]\w*\?/,
-  tUIDENT: /[A-Z]\w*/,
+    tUKEYWORD: /[A-Z]\w*[!?=]?:/,
+    tUIDENT_BANG: /[A-Z]\w*!/,
+    tUIDENT_EQ: /[A-Z]\w*=/,
+    tUIDENT_Q: /[A-Z]\w*\?/,
+    tUIDENT: /[A-Z]\w*/,
 
-  tLKEYWORD: /[a-z]\w*[!?=]?:/,
-  tLIDENT_BANG: /[a-z]\w*!/,
-  tLIDENT_EQ: /[a-z]\w*=/,
-  tLIDENT_Q: /[a-z]\w*\?/,
-  tLIDENT: /[a-z]\w*/,
+    tLKEYWORD: /[a-z]\w*[!?=]?:/,
+    tLIDENT_BANG: /[a-z]\w*!/,
+    tLIDENT_EQ: /[a-z]\w*=/,
+    tLIDENT_Q: /[a-z]\w*\?/,
+    tLIDENT: /[a-z]\w*/,
 
-  tULKEYWORD: /_\w*[!?=]?:/,
-  tULIDENT_BANG: /_\w*!/,
-  tULIDENT_EQ: /_\w*=/,
-  tULIDENT_Q: /_\w*\?/,
-  tULIDENT: /_\w*/,
+    tULKEYWORD: /_\w*[!?=]?:/,
+    tULIDENT_BANG: /_\w*!/,
+    tULIDENT_EQ: /_\w*=/,
+    tULIDENT_Q: /_\w*\?/,
+    tULIDENT: /_\w*/,
 
-  tATIDENT: /@\w+/,
-  tGIDENT: /\$[a-zA-Z]\w*/,
+    tATIDENT: /@\w+/,
+    tGIDENT: /\$[a-zA-Z]\w*/,
 
-  tDQSTRING: /"([^\\]|\\")*"/,
-  tSQSTRING: /'([^\\]|\\')*'/,
+    tDQSTRING: /"([^\\]|\\")*"/,
+    tSQSTRING: /'([^\\]|\\')*'/,
 
-  tINTEGER: /\d+/,
+    tINTEGER: /\d+/,
 
+    tUNKNOWN: /[^\s]+/
+  },
+  /(\s+)|(#[^\n]*)/
 )
 
 grammar = Parseg::Grammar.new() do |grammar|
@@ -222,8 +184,13 @@ grammar = Parseg::Grammar.new() do |grammar|
   grammar[:module_name].rule =
     Opt(T(:kCOLON2)) + Opt(T(:tNAMESPACE)) + T(:tUIDENT)
 
+  # @type var type_names: ^(?module_name: bool, ?interface_name: bool, ?alias_name: bool) -> Parseg::Grammar::Expression::t
   type_names = -> (module_name: true, interface_name: true, alias_name: true) {
-    list = []
+    # @type var module_name: bool
+    # @type var interface_name: bool
+    # @type var alias_name: bool
+
+    list = [] #: Array[Parseg::Grammar::Expression::t]
 
     list << T(:tUIDENT) if module_name
     list << T(:tLIDENT) if alias_name
@@ -431,7 +398,9 @@ grammar = Parseg::Grammar.new() do |grammar|
   grammar[:attr_writer].rule = attribute[:kATTRWRITER]
   grammar[:attr_accessor].rule = attribute[:kATTRACCESSOR]
 
+  # @type var mixin: ^(Symbol, only_interface: bool) -> Parseg::Grammar::Expression::t
   mixin = -> (opr, only_interface:) {
+    # @type var only_interface: bool
     T(opr) + type_names[alias_name: false, module_name: !only_interface] + Opt(T(:kLBRACKET) + Repeat(NT(:type), T(:kCOMMA)) + T(:kRBRACKET))
   }
 
@@ -537,4 +506,4 @@ grammar = Parseg::Grammar.new() do |grammar|
       )
 end
 
-[tokenizer, grammar]
+[tokenizer, grammar] #: [Parseg::_Tokenizer, Parseg::Grammar]

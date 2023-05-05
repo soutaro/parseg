@@ -17,13 +17,15 @@ module Parseg
 
         break if scan.eos?
 
-        tokens.each do |type, regexp|
+        reached_to_end = tokens.each do |type, regexp|
           # @type break: nil
           if str = scan.scan(regexp)
             yield [type, scan.charpos - str.size, str]
             break
           end
         end
+
+        break if reached_to_end
       end
 
       yield nil
