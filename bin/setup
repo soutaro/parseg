@@ -5,3 +5,4 @@ set -vx
 
 bundle install
 bundle exec rbs collection install
+cd vscode-extension && npm install
