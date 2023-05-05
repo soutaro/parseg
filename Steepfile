@@ -2,7 +2,7 @@ D = Steep::Diagnostic
 
 target :lib do
   signature "sig"
-  check "lib", "exe/parseg-lsp"
+  check "lib", "exe/parseg-lsp", "samples/*.rb"
 
   # configure_code_diagnostics(D::Ruby.strict)       # `strict` diagnostics setting
   # configure_code_diagnostics(D::Ruby.lenient)      # `lenient` diagnostics setting
