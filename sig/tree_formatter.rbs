@@ -1,7 +1,5 @@
 module Parseg
   class TreeFormatter
-    def format: (Result) -> untyped
-
-    def format0: (Tree::t, TokenFactory) -> untyped
+    def format: (Tree::t, factory: TokenFactory) -> untyped
   end
 end

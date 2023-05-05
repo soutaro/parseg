@@ -1,48 +1,51 @@
 module Parseg
   class TreeFormatter
-    def format(result)
-      {
-        tree: format0(result.tree, result.factory),
-        skips: result.skip_tokens.map do |id|
-          result.factory.token(id)
-        end
-      }
-    end
-
-    def format0(tree, factory)
-      tree.each.map do |t|
-        case t
-        when Tree::EmptyTree
-          nil
-        when Tree::TokenTree
-          "#{t.expression.token}:`#{factory.token_string!(t.token_id)}`"
-        when Tree::NonTerminalTree
-          if t.value
-            { t.expression.non_terminal.name => format0(t.value, factory) }
-          else
-            { t.expression.non_terminal.name => nil }
-          end
-
-        when Tree::AlternationTree
-          format0(t.value, factory)
-        when Tree::OptionalTree
-          if t.value
-            format0(t.value, factory)
-          end
-        when Tree::RepeatTree
-          {
-            repeat: t.values.map {|t| format0(t, factory) }
-          }
-        when Tree::MissingTree
-          if id = t.token
-            {
-              :"🚨🚨🚨missing🚨🚨🚨" => "given=`#{factory.token_string!(id)}`"
-            }
+    def format(tree, factory:)
+      tree.each.flat_map do |tree|
+        case tree
+        when Parseg::Tree::TokenTree
+          type, _offset, value = factory.token(tree.token_id)
+          [
+            [type, value]
+          ]
+        when Parseg::Tree::NonTerminalTree
+          if tree.value
+            [
+              {
+                tree.expression.non_terminal.name => format(tree.value, factory: factory)
+              }
+            ]
           else
             {
-              :"🚨🚨🚨missing🚨🚨🚨" => "given=EOF",
-              expected: t.expression.first_tokens
+              tree.expression.non_terminal.name => []
             }
+          end
+        when Parseg::Tree::EmptyTree
+          []
+        when Parseg::Tree::AlternationTree
+          format(tree.value, factory: factory)
+        when Parseg::Tree::OptionalTree
+          if tree.value
+            format(tree.value, factory: factory)
+          else
+            []
+          end
+        when Parseg::Tree::RepeatTree
+          tree.values.flat_map do |t|
+            format(t, factory: factory)
+          end
+        when Parseg::Tree::MissingTree
+          if tree.token
+            type, _, _value = factory.token(tree.token)
+            [
+              {
+                unexpected: type
+              }
+            ]
+          else
+            [
+              { unexpected: nil }
+            ]
           end
         end
       end
