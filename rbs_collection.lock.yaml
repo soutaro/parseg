@@ -2,7 +2,7 @@
 sources:
 - type: git
   name: ruby/gem_rbs_collection
-  revision: 34275028974d6352fe7666a6e833def7a6efb4a5
+  revision: 12631190e75c631eca0908ecc8c03bcfd78c0c99
   remote: https://github.com/ruby/gem_rbs_collection.git
   repo_dir: gems
 path: ".gem_rbs_collection"
@@ -16,7 +16,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 34275028974d6352fe7666a6e833def7a6efb4a5
+    revision: 12631190e75c631eca0908ecc8c03bcfd78c0c99
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: concurrent-ruby
@@ -24,7 +24,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 34275028974d6352fe7666a6e833def7a6efb4a5
+    revision: 12631190e75c631eca0908ecc8c03bcfd78c0c99
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: date
@@ -40,7 +40,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 34275028974d6352fe7666a6e833def7a6efb4a5
+    revision: 12631190e75c631eca0908ecc8c03bcfd78c0c99
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: json

@@ -4,5 +4,5 @@ IFS=$'\n\t'
 set -vx
 
 bundle install
-bundle exec rbs collection install
+bundle exec rbs collection install --frozen
 cd vscode-extension && npm install
