@@ -139,16 +139,31 @@ module Parseg
     end
 
     module DSL : _WithGrammar
+      # Defines a terminal symbol with token type in Symbol.
+      #
       def T: (Symbol) -> Expression::TokenSymbol
 
+      # Defines a non-terminal symbol with non-terminal name in Symbol.
+      #
       def NT: (Symbol) -> Expression::NonTerminalSymbol
 
+      # Optional tree that is the expression or empty.
+      #
       def Opt: (Expression::t) -> Expression::Optional
 
+      # Repeat tree represents a repeat of a tree, with optional separator.
+      #
+      # At least one `content` tree is required.
+      # Use it with `Opt` to accept empty repeatation.
+      #
       def Repeat: (Expression::t, ?Expression::t) -> Expression::Repeat
 
+      # Alternation tree represents one of the given trees.
+      #
       def Alt: (*Expression::t) -> Expression::Alternation
 
+      # Empty tree consumes no token.
+      # 
       def Empty: () -> Expression::Empty
     end
 

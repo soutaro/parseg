@@ -1,5 +1,5 @@
 {
-  "parseg-lsp.grammar": "simplified_rbs.rb",
+  "parseg-lsp.grammar": "math.rb",
   "parseg-lsp.change_based_recovery": true,
   "parseg-lsp.skip_tokens": true,
   "parseg-lsp.error_tolerant": true

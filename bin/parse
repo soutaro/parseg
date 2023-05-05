@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+
+require "parseg"
+require "optparse"
+
+def empty_binding
+  binding
+end
+
+error_tolerant_enabled = true
+skip_tokens_enabled = true
+start = :start
+
+OptionParser.new do |opts|
+  opts.on("--no-error-tolerant") { error_tolerant_enabled = false }
+  opts.on("--no-skip-tokens") { skip_tokens_enabled = false }
+  opts.on("--start=START") { start = _1.to_sym }
+end.parse!(ARGV)
+
+if ARGV.size < 1
+  puts "$ parse GRAMMAR_FILE [input]"
+  exit 0
+end
+
+grammar_file = ARGV.shift
+tokenizer, grammar = eval(File.read(grammar_file), empty_binding, grammar_file)
+
+session = Parseg::ParsingSession.new(tokenizer: tokenizer, grammar: grammar, start: start)
+session.error_tolerant_enabled = error_tolerant_enabled
+session.skip_unknown_tokens_enabled = skip_tokens_enabled
+session.change_based_error_recovery_enabled = false
+
+input =
+  if path = ARGV.shift
+    File.read(path)
+  else
+    STDIN.read
+  end
+
+result = session.update([[input, [1, 0], [1, 0]]])
+
+pp Parseg::TreeFormatter.new().format(result.tree, factory: result.factory)
