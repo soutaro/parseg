@@ -3,15 +3,13 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import * as path from 'path';
 import { workspace, ExtensionContext, commands, window } from 'vscode';
 
 import {
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
-	State,
-	TransportKind
+	State
 } from 'vscode-languageclient/node';
 
 let session: {
@@ -22,11 +20,12 @@ let session: {
 } | undefined
 
 async function start() {
-	const grammarPath = workspace.getConfiguration('parseg-lsp').get("grammar") as (string | undefined)
-	const startSymbol = workspace.getConfiguration('parseg-lsp').get('start') as string
-	const errorTolerant = workspace.getConfiguration('parseg-lsp').get("error_tolerant") as boolean
-	const skipTokens = workspace.getConfiguration('parseg-lsp').get("skip_tokens") as boolean
-	const changeBased = workspace.getConfiguration('parseg-lsp').get("change_based_recovery") as boolean
+	const configuration = workspace.getConfiguration("parseg-lsp")
+	const grammarPath = configuration.get<string>("grammarFile")
+	const startSymbol = configuration.get<string>('startSymbol', "start")
+	const errorTolerant = configuration.get("enableErrorTolerant", true)
+	const skipTokens = configuration.get("enableSkipTokens", true)
+	const changeBased = configuration.get("enableChangeBasedErrorRecovery", true)
 
 	const options = [] as string[]
 
@@ -50,7 +49,7 @@ async function start() {
 			await session.client.restart()
 			return
 		} else {
-			session.client.stop()
+			await session.client.stop()
 		}
 	}
 

@@ -22,33 +22,28 @@
       {
         "title": "Parseg Demo LSP",
         "properties": {
-          "parseg-lsp.grammar": {
-            "title": "Grammar file",
+          "parseg-lsp.grammarFile": {
             "markdownDescription": "Path to the grammar definition from the working directory",
             "type": "string",
             "default": null
           },
-          "parseg-lsp.start": {
-            "title": "Start symbol",
-            "markdownDescription": "The start symbol of the grammar",
+          "parseg-lsp.startSymbol": {
+            "markdownDescription": "The start symbol of the grammar.",
             "type": "string",
             "default": "start"
           },
-          "parseg-lsp.error_tolerant": {
-            "title": "Error tolerant",
-            "markdownDescription": "Enable error tolerant parsing",
+          "parseg-lsp.enableErrorTolerant": {
+            "markdownDescription": "Enable *error tolerant parsing*",
             "type": "boolean",
             "default": true
           },
-          "parseg-lsp.skip_tokens": {
-            "title": "Skip tokens",
-            "markdownDescription": "Enable skip tokens",
+          "parseg-lsp.enableSkipTokens": {
+            "markdownDescription": "Enable *skip tokens*",
             "type": "boolean",
             "default": true
           },
-          "parseg-lsp.change_based_recovery": {
-            "title": "Change based error recovery",
-            "markdownDescription": "Enable change based error recovery",
+          "parseg-lsp.enableChangeBasedErrorRecovery": {
+            "markdownDescription": "Enable *change based error recovery*",
             "type": "boolean",
             "default": true
           }
