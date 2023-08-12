@@ -33,7 +33,6 @@ class ParserTest < Minitest::Test
   end
 
   def parse(string, start = :exprs)
-
     parser = Parseg::Parser.new(
       grammar: Grammar,
       factory: Parseg::TokenFactory.new(tokenizer: Tokenizer, status: string)
@@ -47,10 +46,10 @@ class ParserTest < Minitest::Test
   def test_parse_success1
     result = parse("123 (456)")
 
-    assert_nil result.tree.error_tree?
+    refute result.has_error?
 
     assert_tree(
-      result.tree,
+      [result.tree],
       {
         exprs: [
           {
@@ -102,10 +101,10 @@ class ParserTest < Minitest::Test
   def test_parse_success2
     result = parse("1 + 2 * 3 - 4")
 
-    assert_nil result.tree.error_tree?
+    refute result.has_error?
 
     assert_tree(
-      result.tree,
+      [result.tree],
       {
         exprs: [
           {
@@ -144,10 +143,10 @@ class ParserTest < Minitest::Test
   def test_parse_success3
     result = parse("1+2 3", :exprs)
 
-    assert_nil result.tree.error_tree?
+    refute result.has_error?
 
     assert_tree(
-      result.tree,
+      [result.tree],
       {
         exprs: [
           {
@@ -195,13 +194,16 @@ class ParserTest < Minitest::Test
   def test_parse_error_no_recovery
     result = parse("(") {|p| p.error_tolerant_enabled = false }
 
-    assert_equal [result.tree], result.tree.error_tree?
-    assert_instance_of Array, result.tree.immediate_error_tree?
+    assert result.has_error?
 
     assert_tree(
-      result.tree,
+      [result.tree],
       {
-        unexpected: nil
+        exprs: [
+          {
+            unexpected: nil
+          }
+        ]
       },
       factory: result.factory
     )
@@ -210,13 +212,10 @@ class ParserTest < Minitest::Test
   def test_missing_1
     result = parse("(123 +)", :term)
 
-    assert_instance_of Array, result.tree.error_tree?
-    assert_equal 1, result.tree.error_tree?.size
-    assert_nil result.tree.immediate_error_tree?
-
+    assert result.has_error?
 
     assert_tree(
-      result.tree,
+      [result.tree],
       {
         term: [
           [:LPAREN, "("],
@@ -245,12 +244,10 @@ class ParserTest < Minitest::Test
   def test_missing_2
     result = parse("123 + +", :exprs)
 
-    assert_instance_of Array, result.tree.error_tree?
-    assert_equal 1, result.tree.error_tree?.size
-    assert_nil result.tree.immediate_error_tree?
+    assert result.has_error?
 
     assert_tree(
-      result.tree,
+      [result.tree],
       {
         exprs: [
           {
@@ -279,12 +276,10 @@ class ParserTest < Minitest::Test
   def test_missing_3
     result = parse("(1 3)", :exprs)
 
-    assert_instance_of Array, result.tree.error_tree?
-    assert_equal 1, result.tree.error_tree?.size
-    assert_nil result.tree.immediate_error_tree?
+    assert result.has_error?
 
     assert_tree(
-      result.tree,
+      [result.tree],
       {
         exprs: [
           {

@@ -2,21 +2,30 @@ module Parseg
   class Result
     attr_reader factory: TokenFactory
 
-    attr_reader tree: Tree::t
+    attr_reader tree: Tree::NonTerminalTree
 
     attr_reader skip_tokens: Array[Integer]
 
-    def initialize: (tree: Tree::t, factory: TokenFactory, skip_tokens: Array[Integer]) -> void
+    def initialize: (tree: Tree::NonTerminalTree, factory: TokenFactory, skip_tokens: Array[Integer]) -> void
 
-    def each_error_tree: (?Tree::t) { (Tree::MissingTree) -> void } -> void
+    def each_error_tree: () { (Tree::MissingTree) -> void } -> void
                        | () -> Enumerator[Tree::MissingTree, void]
 
+    # Iterates over each subtree
+    #
     def each_tree: (?Tree::t) { (Tree::t) -> void } -> void
                  | () -> Enumerator[Tree::t, void]
 
-    # Returns a range of cursor positions that spans the inner most *cut* tree that includes `deleted_token`
+    # Returns an array of tree that contains given token range
+    #
+    # Inner tree comes first.
+    #
+    def tree_list: (Range[Integer], ?Tree::t, ?Array[Tree::t]) -> Array[Tree::t]
+
+    # Returns a range of cursor positions that spans the inner most *block* tree that includes `deleted_token`
     def tree_range_for_deleted_token: (Integer deleted_token, ?Tree::t) -> Range[Integer]?
 
+    # Returns true when `tree` has an error inside it
     def has_error?: () -> bool
   end
 end

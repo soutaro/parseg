@@ -8,92 +8,111 @@ module Parseg
            | OptionalTree
            | MissingTree
 
-    class Base[EXPR]
-      attr_reader next_tree: t?
+    type tree = Array[t]
 
+    class Base[EXPR]
       attr_reader expression: EXPR
 
-      def range: (TokenFactory) -> Range[Integer]?
+      # Yields token ids
+      %a{override}
+      def each_token: () { (Integer) -> void } -> void
+                    | () -> Enumerator[Integer, void]
 
       # Range of token id
+      #
+      # Returns `nil` if it doesn't have any token.
+      #
       def token_range: () -> Range[Integer]?
 
+      # The first *non-nil* token
+      #
+      # Returns `nil` if it's empty.
+      #
       def first_token: () -> Integer?
 
+      # The last *non-nil* token
+      #
+      # Returns `nil` if it's empty.
+      #
       def last_token: () -> Integer?
 
-      def first_range: (TokenFactory) -> Range[Integer]?
-
-      def each: () { (t) -> void } -> void
-              | () -> Enumerator[t, void]
-
-      # Indicates if there is an error inside this tree
+      # The range of positions that covers the tree
       #
-      # * Returns `nil` if everything under the tree is ok (no error)
-      # * Returns an `MissingTree` if error is at the same level
-      # * Returns no `MissingTree` object if one of the sub tree has error
+      # Returns `nil` if it's empty.
       #
-      def error_tree?: () -> Array[t]?
+      def range: (TokenFactory) -> Range[Integer]?
 
-      def immediate_error_tree?: () -> Array[MissingTree]?
+      # The range of the `first_token`
+      def first_token_range: (TokenFactory) -> Range[Integer]?
 
-      def error_trees: (Array[t]) -> Array[t]
+      # The range of the `last_token`
+      def last_token_range: (TokenFactory) -> Range[Integer]?
+
+      # # Indicates if there is an error inside this tree
+      # #
+      # # * Returns `nil` if everything under the tree is ok (no error)
+      # # * Returns an `MissingTree` if error is at the same level
+      # # * Returns no `MissingTree` object if one of the sub tree has error
+      # #
+      # def error_tree?: () -> Array[t]?
+
+      # def immediate_error_tree?: () -> Array[MissingTree]?
+
+      # def error_trees: (Array[t]) -> Array[t]
     end
 
     class TokenTree < Base[Grammar::Expression::TokenSymbol]
       attr_reader token_id: Integer
 
-      def initialize: (Grammar::Expression::TokenSymbol, Integer, next_tree: t?) -> void
+      def initialize: (Grammar::Expression::TokenSymbol, Integer) -> void
     end
 
     class NonTerminalTree < Base[Grammar::Expression::NonTerminalSymbol]
-      attr_reader value: t?
+      # The tree which is reduced to the non-ternimal
+      #
+      # Cannot be empty.
+      #
+      attr_reader tree: tree
 
-      def initialize: (Grammar::Expression::NonTerminalSymbol, t?, next_tree: t?) -> void
-
-      def error_trees: (Array[t]) -> Array[t]
+      def initialize: (Grammar::Expression::NonTerminalSymbol, tree) -> void
     end
 
-    class EmptyTree < Base[Grammar::Expression::Empty]
-      def initialize: (Grammar::Expression::Empty, next_tree: t?) -> void
+    class EmptyTree < Base[Grammar::Expression::Empty | Grammar::Expression::Optional | Grammar::Expression::NonTerminalSymbol]
+      def initialize: (Grammar::Expression::Empty | Grammar::Expression::Optional | Grammar::Expression::NonTerminalSymbol) -> void
     end
 
     class AlternationTree < Base[Grammar::Expression::Alternation]
-      attr_reader value: t
+      # Cannot be empty
+      attr_reader tree: tree
 
-      def initialize: (Grammar::Expression::Alternation, t, next_tree: t?) -> void
-
-      def error_trees: (Array[t]) -> Array[t]
+      def initialize: (Grammar::Expression::Alternation, tree) -> void
     end
 
     class RepeatTree < Base[Grammar::Expression::Repeat]
-      attr_reader values: Array[t]
+      # Cannot be empty
+      attr_reader trees: Array[tree]
 
-      def each_non_terminal: () { (t) -> void } -> void
-                           | () -> Enumerator[t, void]
+      def each_content: () { (tree) -> void } -> void
+                      | () -> Enumerator[tree, void]
 
-      def each_separator: () { (t) -> void } -> void
-                        | () -> Enumerator[t, void]
+      def each_separator: () { (tree) -> void } -> void
+                        | () -> Enumerator[tree, void]
 
-      def initialize: (Grammar::Expression::Repeat, Array[t], next_tree: t?) -> void
-
-      def error_trees: (Array[t]) -> Array[t]
+      def initialize: (Grammar::Expression::Repeat, Array[tree]) -> void
     end
 
     class OptionalTree < Base[Grammar::Expression::Optional]
-      attr_reader value: t?
+      # Cannot be empty
+      attr_reader tree: tree
 
-      def initialize: (Grammar::Expression::Optional, t?, next_tree: t?) -> void
-
-      def error_trees: (Array[t]) -> Array[t]
+      def initialize: (Grammar::Expression::Optional, tree) -> void
     end
 
     class MissingTree < Base[Grammar::Expression::t]
+      # The token given to a rule, or `nil` if it is at eof
       attr_reader token: Integer?
 
-      def initialize: (Grammar::Expression::t, Integer?, next_tree: t?) -> void
-
-      def error_trees: (Array[t]) -> Array[t]
+      def initialize: (Grammar::Expression::t, Integer?) -> void
     end
   end
 end

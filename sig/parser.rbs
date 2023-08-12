@@ -1,3 +1,5 @@
+use Parseg::Grammar::Expression
+
 module Parseg
   #
   # # Tokens
@@ -50,11 +52,24 @@ module Parseg
 
     @exit_symbol: Symbol?
 
-    def parse_rule: (Grammar::Expression::t, Set[Symbol] consumable_tokens, Array[Integer] skip_tokens) -> Tree::t
+    # Parses the sequence of expressions, connected with `#next_expr` method
+    #
+    # Returns an array
+    #
+    def parse_rule: (Expression::t?, Set[Symbol] consumable_tokens, Array[Integer] skip_tokens) -> Tree::tree
+
+    # Parses single expression and returns one of the instance of tree
+    #
+    def parse_single_rule: (Expression::t, Set[Symbol] consumable_tokens, Array[Integer] skip_tokens) -> Tree::t
 
     def skip_non_consumable_tokens: (Set[Symbol] consumable, Array[Integer] skip_tokens) -> void
 
-    def new_consumable_tokens: (Set[Symbol] tokens, *Grammar::Expression::t? next_exprs) -> Set[Symbol]
+    def new_consumable_tokens: (Set[Symbol] tokens, *Expression::t? next_exprs) -> Set[Symbol]
+
+    # Returns or `throw` the given error tree
+    def return_error_tree: (Tree::MissingTree) -> Tree::MissingTree
+
+    def catch_error_tree: () { () -> Tree::tree } -> Tree::tree
 
     def throw_error_tree: (Tree::MissingTree) -> bot
 

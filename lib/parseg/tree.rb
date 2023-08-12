@@ -1,214 +1,170 @@
 module Parseg
   module Tree
     class Base
-      attr_reader :next_tree, :expression
-
-      def range(locator)
-        unless self.is_a?(MissingTree)
-          fr = first_range(locator)
-        end
-
-        if next_tree
-          nr = next_tree.range(locator)
-        end
-
-        if fr && nr
-          fr.begin .. nr.end
-        else
-          fr || nr
-        end
-      end
+      attr_reader :expression
 
       def token_range
-        first_token = nil #: Integer?
-        last_token = nil #: Integer?
+        ft = nil #: Integer?
+        lt = nil #: Integer?
 
-        each do |tree|
-          # @type break: nil
-          if ft = tree.first_token
-            first_token = ft
-            break
-          end
+        each_token do |token|
+          ft = token unless ft
+          lt = token
         end
 
-        each.reverse_each do |tree|
-          # @type break: nil
-          if lt = tree.last_token
-            last_token = lt
-            break
-          end
-        end
-
-        if first_token || last_token
-          start_token = first_token || last_token #: Integer
-          end_token = last_token || first_token #: Integer
-          start_token..end_token
+        if ft && lt
+          ft..lt
         end
       end
 
-      def each(&block)
-        if block
-          yield(_ = self)
-          if next_tree
-            next_tree.each(&block)
-          end
-        else
-          enum_for :each
+      def first_token
+        token_range&.begin
+      end
+
+      def last_token
+        token_range&.end
+      end
+
+      def range(locator)
+        tr = token_range
+
+        if tr
+          first_range = locator.token_range(tr.begin)
+          last_range = locator.token_range(tr.end)
+          first_range.begin ... last_range.end
         end
       end
 
-      def error_tree?
-        ets = error_trees([])
-        unless ets.empty?
-          ets
+      def first_token_range(locator)
+        if token = first_token
+          locator.token_range(token)
         end
       end
 
-      def immediate_error_tree?
-        if errors = error_tree?
-          immediate_errors = errors.filter {|tree| tree.is_a?(MissingTree) } #: Array[MissingTree]
-          unless immediate_errors.empty?
-            immediate_errors
-          end
+      def last_token_range(locator)
+        if token = last_token
+          locator.token_range(token)
         end
       end
 
-      def error_trees(errors)
-        if next_tree
-          next_tree.error_trees(errors)
-        else
-          errors
-        end
-      end
+      # def error_tree?
+      #   ets = error_trees([])
+      #   unless ets.empty?
+      #     ets
+      #   end
+      # end
+
+      # def immediate_error_tree?
+      #   if errors = error_tree?
+      #     immediate_errors = errors.filter {|tree| tree.is_a?(MissingTree) } #: Array[MissingTree]
+      #     unless immediate_errors.empty?
+      #       immediate_errors
+      #     end
+      #   end
+      # end
+
+      # def error_trees(errors)
+      #   if next_tree
+      #     next_tree.error_trees(errors)
+      #   else
+      #     errors
+      #   end
+      # end
     end
 
     class TokenTree < Base
       attr_reader :token_id
 
-      def initialize(expr, token_id, next_tree:)
+      def initialize(expr, token_id)
         @expression = expr
         @token_id = token_id
-        @next_tree = next_tree
       end
 
-      def first_range(locator)
-        locator.token_range(token_id)
-      end
-
-      def first_token
-        token_id
-      end
-
-      def last_token
-        token_id
+      def each_token(&block)
+        if block
+          yield token_id
+        else
+          enum_for :each_token
+        end
       end
     end
 
     class NonTerminalTree < Base
-      attr_reader :value
+      attr_reader :tree
 
-      def initialize(expr, value, next_tree:)
+      def initialize(expr, tree)
         @expression = expr
-        @value = value
-        @next_tree = next_tree
+        @tree = tree
       end
 
-      def first_range(locator)
-        if value
-          value.first_range(locator)
+      def each_token(&block)
+        if block
+          tree.each do |tree|
+            tree.each_token(&block)
+          end
+        else
+          enum_for :each_token
         end
-      end
-
-      def first_token
-        value&.token_range&.begin
-      end
-
-      def last_token
-        value&.token_range&.end
-      end
-
-      def error_trees(errors)
-        if value && value.error_tree?
-          errors << value
-        end
-
-        super(errors)
       end
     end
 
     class EmptyTree < Base
-      def initialize(expr, next_tree:)
+      def initialize(expr)
         @expression = expr
-        @next_tree = next_tree
       end
 
-      def first_range(locator)
-        nil
-      end
-
-      def first_token
-      end
-
-      def last_token
+      def each_token
+        if block_given?
+        else
+          enum_for :each_token
+        end
       end
     end
 
     class AlternationTree < Base
-      attr_reader :value
+      attr_reader :tree
 
-      def initialize(expr, value, next_tree:)
+      def initialize(expr, tree)
         @expression = expr
-        @value = value
-        @next_tree = next_tree
+        @tree = tree
       end
 
-      def first_range(locator)
-        value.first_range(locator)
-      end
-
-      def error_trees(errors)
-        if value && value.error_tree?
-          errors << value
+      def each_token(&block)
+        if block
+          tree.each do |t|
+            t.each_token(&block)
+          end
+        else
+          enum_for :each_token
         end
-
-        super(errors)
-      end
-
-      def first_token
-        value.token_range&.begin
-      end
-
-      def last_token
-        value.token_range&.end
       end
     end
 
     class RepeatTree < Base
-      attr_reader :values
+      attr_reader :trees
 
-      def initialize(expr, values, next_tree:)
+      def initialize(expr, trees)
         @expression = expr
-        @values = values
-        @next_tree = next_tree
+        @trees = trees
       end
 
-      def each_non_terminal(&block)
+      def each_content(&block)
         if block
-          values.each do |value|
-            if value.expression == expression.content
-              yield value
+          trees.each_with_index do |tree, index|
+            if index.even?
+              yield tree
             end
           end
         else
-          enum_for :each_non_terminal
+          enum_for :each_content
         end
       end
 
       def each_separator(&block)
         if block
-          values.each do |value|
-            if value.expression == expression.separator
-              yield value
+          trees.each_with_index do |tree, index|
+            if index.odd?
+              yield tree
             end
           end
         else
@@ -216,88 +172,44 @@ module Parseg
         end
       end
 
-      def first_range(locator)
-        first = values.first or raise
-        first.first_range(locator)
-      end
-
-      def error_trees(errors)
-        if values.any? {|t| t.error_tree? }
-          errors << self
-        end
-
-        super(errors)
-      end
-
-      def first_token
-        if first = values.first
-          first.token_range&.begin
-        end
-      end
-
-      def last_token
-        if last = values.last
-          last.token_range&.end
+      def each_token(&block)
+        if block
+          trees.each do |tree|
+            tree.each do |t|
+              t.each_token &block
+            end
+          end
+        else
+          enum_for :each_token
         end
       end
     end
 
     class OptionalTree < Base
-      attr_reader :value
+      attr_reader :tree
 
-      def initialize(expr, value, next_tree:)
-        @value = value
+      def initialize(expr, tree)
         @expression = expr
-        @next_tree = next_tree
+        @tree = tree
       end
 
-      def first_range(locator)
-        if value
-          value.first_range(locator)
+      def each_token(&block)
+        if block
+          tree.each do |t|
+            t.each_token(&block)
+          end
+        else
+          enum_for :each_token
         end
-      end
-
-      def error_trees(errors)
-        if value && value.error_tree?
-          errors << self
-        end
-
-        super(errors)
-      end
-
-      def first_token
-        value&.token_range&.begin
-      end
-
-      def last_token
-        value&.token_range&.end
       end
     end
 
     class MissingTree < Base
       attr_reader :token
 
-      def initialize(expr, token, next_tree:)
+      def initialize(expr, token)
         @expression = expr
         @token = token
-        @next_tree = next_tree
-      end
-
-      def first_range(locator)
-        if token
-          locator.token_range(token)
-        end
-      end
-
-      def error_trees(errors)
-        errors << self
-        super(errors)
-      end
-
-      def first_token
-      end
-
-      def last_token
       end
     end
   end
