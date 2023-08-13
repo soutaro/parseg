@@ -185,6 +185,15 @@ module Parseg
       tree = [] #: Tree::tree
 
       while expression
+        if expression.is_a?(Grammar::Expression::NonTerminalSymbol)
+          if expression.non_terminal.block?
+            unless expression.non_terminal.rule.first_tokens.include?(nil)
+              consumable_tokens = Set[]
+            end
+          end
+        end
+        consumable_tokens = new_consumable_tokens(consumable_tokens, expression&.next_expr)
+
         tree << parse_single_rule(expression, consumable_tokens, skip_tokens)
         expression = expression.next_expr
       end
@@ -216,18 +225,7 @@ module Parseg
             first_tokens = expr.non_terminal.rule.first_tokens
 
             if current_token_included_in?(first_tokens)
-              consumable_tokens_for_rule =
-                if !first_tokens.include?(nil) && expr.non_terminal.block?
-                  new_consumable_tokens(Set[], expr.next_expr)
-                else
-                  new_consumable_tokens(consumable_tokens, expr.next_expr)
-                end
-
-              value = parse_rule(
-                expr.non_terminal.rule,
-                consumable_tokens_for_rule,
-                skip_tokens
-              )
+              value = parse_rule(expr.non_terminal.rule, consumable_tokens, skip_tokens)
 
               if expr.non_terminal.block?
                 Parseg.logger.debug {
@@ -259,11 +257,7 @@ module Parseg
         first_tokens = expr.expression.first_tokens
 
         if current_token_included_in?(first_tokens)
-          tree = parse_rule(
-            expr.expression,
-            new_consumable_tokens(consumable_tokens, expr.next_expr),
-            skip_tokens
-          )
+          tree = parse_rule(expr.expression, consumable_tokens, skip_tokens)
         else
           tree = [Tree::EmptyTree.new(expr)]
         end
@@ -276,12 +270,7 @@ module Parseg
         expr.expressions.each do |opt|
           option_first_tokens = opt.first_tokens
           if current_token_included_in?(option_first_tokens) || option_first_tokens.include?(nil)
-            value = parse_rule(
-              opt,
-              new_consumable_tokens(consumable_tokens, expr.next_expr),
-              skip_tokens
-            )
-
+            value = parse_rule(opt, consumable_tokens, skip_tokens)
             return Tree::AlternationTree.new(expr, value)
           end
         end
@@ -291,11 +280,11 @@ module Parseg
       when Grammar::Expression::Repeat
         trees = [] #: Array[Tree::tree]
 
-        consumable_for_content = new_consumable_tokens(consumable_tokens, expr.next_expr, expr.separator)
+        consumable_for_content = new_consumable_tokens(consumable_tokens, expr.separator)
         if expr.separator.first_tokens.include?(nil)
           consumable_for_content.merge(expr.content.consumable_tokens)
         end
-        consumable_for_separator = new_consumable_tokens(consumable_tokens, expr.next_expr, expr.content)
+        consumable_for_separator = new_consumable_tokens(consumable_tokens, expr.content)
         if expr.content.first_tokens.include?(nil)
           consumable_for_content.merge(expr.separator.consumable_tokens)
         end

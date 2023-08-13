@@ -54,11 +54,28 @@ module Parseg
 
     # Parses the sequence of expressions, connected with `#next_expr` method
     #
-    # Returns an array
+    # Returns an array.
+    #
+    # `consumable_tokens` is the set of tokens that can be consumed by follwoing expressions at the parent-level.
+    #
+    # ```
+    # A B C
+    #   |
+    #  X Y     <= running parse_rule, with `consumable_tokens` == `following(C)`
+    # ```
     #
     def parse_rule: (Expression::t?, Set[Symbol] consumable_tokens, Array[Integer] skip_tokens) -> Tree::tree
 
     # Parses single expression and returns one of the instance of tree
+    #
+    # `consumable_tokens` is the set of tokens that can be consumed by following expressions, the `next_expr` and the parent-level expression.
+    #
+    # ```
+    # A B C
+    #   |
+    #  X Y
+    #  ^        <= running single_parse_rule, with `consumable_tokens` == `following(C) + following(Y)`
+    # ```
     #
     def parse_single_rule: (Expression::t, Set[Symbol] consumable_tokens, Array[Integer] skip_tokens) -> Tree::t
 
