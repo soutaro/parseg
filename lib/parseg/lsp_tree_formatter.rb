@@ -39,7 +39,7 @@ module Parseg
               )
             ]
           when Tree::NonTerminalTree
-            if tree.value && (children = format_tree(tree.value, last_position: last_position)) && !children.empty?
+            if (children = format_tree(tree.tree, last_position: last_position)) && !children.empty?
               first_child = children.first or raise
               last_child = children.last or raise
 
@@ -75,18 +75,14 @@ module Parseg
               ]
             end
           when Tree::OptionalTree
-            if tree.value
-              format_tree(tree.value, last_position: last_position)
-            else
-              []
-            end
+            format_tree(tree.tree, last_position: last_position)
           when Tree::AlternationTree
-            format_tree(tree.value, last_position: last_position)
+            format_tree(tree.tree, last_position: last_position)
           when Tree::RepeatTree
             children = []
 
-            tree.values.each do |child|
-              childs = format_tree(child, last_position: last_position)
+            tree.trees.each do |tree|
+              childs = format_tree(tree, last_position: last_position)
               children.push(*childs)
               if last_child = childs.last
                 last_position = last_child.range[:end]
